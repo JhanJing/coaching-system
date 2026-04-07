@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>教練管理系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --surface3: #e8e4de;
+    --border: #ddd9d2;
+    --accent: #2d4a3e;
+    --accent2: #7a9e8e;
+    --text: #1a1a18;
+    --text2: #7a7670;
+    --text3: #b5b0a8;
+    --danger: #c0392b;
+    --warning: #b8860b;
+    --tag-bg: #e8e4de;
+    --bottom-nav-h: 64px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; font-size:14px; -webkit-font-smoothing:antialiased; }
+  .app { display:flex; flex-direction:column; min-height:100vh; }
+
+  /* ── Header ── */
+  header { padding:14px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface); position:sticky; top:0; z-index:100; }
+  .logo { font-size:15px; font-weight:600; letter-spacing:-0.01em; color:var(--text); }
+  .logo span { color:var(--accent2); }
+  nav.top-nav { display:flex; gap:2px; }
+  nav.top-nav button { background:none; border:none; color:var(--text2); padding:7px 14px; border-radius:6px; cursor:pointer; font-size:13px; font-family:inherit; font-weight:500; transition:all 0.15s; }
+  nav.top-nav button:hover { color:var(--text); background:var(--surface2); }
+  nav.top-nav button.active { color:var(--accent); background:rgba(45,74,62,0.08); }
+
+  /* ── Bottom Nav (mobile) ── */
+  nav.bottom-nav { display:none; }
+  @media(max-width:600px) {
+    nav.top-nav { display:none; }
+    nav.bottom-nav {
+      display:flex; position:fixed; bottom:0; left:0; right:0; z-index:200;
+      background:var(--surface); border-top:1px solid var(--border);
+      padding-bottom: env(safe-area-inset-bottom);
+      height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+    }
+    nav.bottom-nav button {
+      flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:3px; padding:8px 4px; color:var(--text3); transition:color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    nav.bottom-nav button.active { color:var(--accent); }
+    nav.bottom-nav button .bnav-icon { font-size:20px; line-height:1; }
+    nav.bottom-nav button .bnav-label { font-size:10px; font-weight:500; letter-spacing:0.02em; }
+    .main { padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 16px); }
+    .fab { bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 16px); }
+  }
+
+  .main { flex:1; padding:24px 20px; max-width:860px; margin:0 auto; width:100%; }
+  .view { display:none; }
+  .view.active { display:block; }
+
+  .section-title { font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:16px; }
+
+  /* ── Today Strip ── */
+  .today-strip {
+    background:rgba(45,74,62,0.05); border:1px solid rgba(45,74,62,0.12);
+    border-radius:10px; padding:12px 16px; margin-bottom:12px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .today-strip-title { font-size:12px; font-weight:600; color:var(--accent); }
+  .today-strip-stats { display:flex; gap:12px; flex-wrap:wrap; }
+  .today-strip-stat { font-size:12px; color:var(--text2); }
+  .today-strip-stat strong { color:var(--text); font-weight:600; }
+
+  /* ── Student grid ── */
+  .student-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; }
+  .student-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:16px; cursor:pointer; transition:all 0.18s;
+  }
+  .student-card:hover {
+    border-color:var(--accent2);
+    box-shadow:0 4px 18px rgba(0,0,0,0.09);
+    transform:translateY(-2px);
+  }
+  .student-card:active { transform:translateY(0); }
+  .student-card.warning { border-left:3px solid var(--warning); }
+  .student-card.danger { border-left:3px solid var(--danger); }
+  .student-name { font-size:15px; font-weight:600; margin-bottom:8px; letter-spacing:-0.01em; }
+  .student-meta { display:flex; gap:6px; flex-wrap:wrap; }
+  .student-next-lesson { margin-top:10px; font-size:11px; color:var(--text2); display:flex; align-items:center; gap:4px; }
+  .student-next-lesson .next-icon { color:var(--accent2); font-size:10px; }
+
+  /* ── Badges ── */
+  .badge { font-size:11px; padding:2px 8px; border-radius:4px; background:var(--surface2); color:var(--text2); font-family:'DM Mono',monospace; font-weight:400; }
+  .badge.accent { background:rgba(45,74,62,0.08); color:var(--accent); }
+  .badge.warning { background:rgba(184,134,11,0.1); color:var(--warning); }
+  .badge.danger { background:rgba(192,57,43,0.08); color:var(--danger); }
+  .badge.teal { background:rgba(122,158,142,0.12); color:var(--accent2); }
+
+  /* ── Forms ── */
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; font-size:10px; font-weight:600; color:var(--text3); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.08em; }
+  .form-group input, .form-group textarea, .form-group select { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:10px 12px; color:var(--text); font-family:inherit; font-size:14px; outline:none; transition:border-color 0.15s; }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color:var(--accent2); background:var(--surface); }
+  .form-group textarea { resize:vertical; min-height:60px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  /* ── Buttons ── */
+  .btn { padding:10px 20px; border-radius:7px; border:none; cursor:pointer; font-family:inherit; font-size:13px; font-weight:500; transition:all 0.15s; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#1e3329; }
+  .btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+  .btn-secondary:hover { border-color:var(--text3); }
+  .btn-danger { background:rgba(192,57,43,0.08); color:var(--danger); border:1px solid rgba(192,57,43,0.2); }
+  .btn-danger:hover { background:rgba(192,57,43,0.14); }
+  .btn-sm { padding:6px 12px; font-size:12px; }
+  .btn-xs { padding:3px 8px; font-size:11px; }
+  .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
+  @media(max-width:600px) {
+    .btn-xs, .btn-sm { min-height:36px; }
+  }
+
+  /* ── Modal animations ── */
+  .modal-overlay {
+    display:flex; position:fixed; inset:0;
+    background:rgba(26,26,24,0); backdrop-filter:blur(0px);
+    z-index:200; align-items:flex-end; justify-content:center; padding:0;
+    pointer-events:none; transition:background 0.25s ease, backdrop-filter 0.25s ease;
+  }
+  .modal-overlay.open {
+    background:rgba(26,26,24,0.4); backdrop-filter:blur(4px);
+    pointer-events:all;
+  }
+  .modal {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:16px 16px 0 0; padding:24px 24px;
+    padding-bottom: max(36px, env(safe-area-inset-bottom));
+    width:100%; max-width:540px; max-height:92vh; overflow-y:auto;
+    box-shadow:0 -8px 40px rgba(0,0,0,0.12);
+    transform:translateY(48px); opacity:0;
+    transition:transform 0.28s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease;
+  }
+  .modal-overlay.open .modal { transform:translateY(0); opacity:1; }
+  .modal-title { font-size:14px; font-weight:600; letter-spacing:-0.01em; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; }
+  .modal-close { background:none; border:none; color:var(--text3); cursor:pointer; font-size:20px; line-height:1; width:28px; height:28px; border-radius:50%; background:var(--surface2); display:flex; align-items:center; justify-content:center; }
+  .modal-close:hover { color:var(--text); }
+
+  /* ── Schedule ── */
+  .week-nav { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .week-title { font-size:13px; font-weight:500; flex:1; text-align:center; color:var(--text2); }
+  .back-today-btn { font-size:11px; font-weight:600; color:var(--accent2); background:rgba(122,158,142,0.1); border:1px solid rgba(122,158,142,0.25); border-radius:5px; padding:3px 10px; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .back-today-btn:hover { background:rgba(122,158,142,0.2); }
+
+  .day-list { display:flex; flex-direction:column; gap:8px; }
+  .day-block { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .day-block.today-block { border-color:rgba(45,74,62,0.25); box-shadow:0 0 0 1px rgba(45,74,62,0.08); }
+  .day-header { padding:9px 14px; background:var(--surface); font-size:11px; font-weight:600; color:var(--text3); letter-spacing:0.06em; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:background 0.15s; }
+  .day-header:hover { background:var(--surface2); }
+  .day-header.today {
+    color:var(--accent);
+    background:linear-gradient(90deg, rgba(45,74,62,0.06) 0%, rgba(45,74,62,0.01) 100%);
+    border-left:3px solid var(--accent);
+  }
+
+  /* "即將上課" pulse dot */
+  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+  .soon-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); animation:pulse-dot 1.4s ease-in-out infinite; margin-right:4px; vertical-align:middle; }
+
+  .schedule-slot { padding:10px 14px; border-top:1px solid var(--border); display:flex; align-items:center; gap:10px; cursor:pointer; transition:background 0.12s; }
+  .schedule-slot:hover { background:var(--surface2); }
+  .schedule-slot.recorded { border-left:3px solid var(--accent2); }
+  .schedule-slot.has-plan:not(.recorded) { border-left:3px solid rgba(122,158,142,0.3); }
+  .slot-time { font-family:'DM Mono',monospace; font-size:11px; color:var(--text3); min-width:44px; }
+  .slot-name { font-weight:500; font-size:13px; flex:1; }
+  .slot-status { font-size:11px; color:var(--text3); }
+  .empty-day { padding:12px 14px; color:var(--text3); font-size:12px; font-style:italic; }
+
+  /* ── Check-in ── */
+  .checkin-btn {
+    padding:4px 10px; border-radius:5px; border:1px solid var(--border);
+    background:none; color:var(--text3); font-size:11px; font-family:inherit;
+    cursor:pointer; transition:all 0.15s; white-space:nowrap;
+    min-height:30px;
+  }
+  @media(max-width:600px){ .checkin-btn { min-height:36px; padding:6px 10px; } }
+  .checkin-btn:hover { border-color:var(--accent2); color:var(--accent); }
+  .checkin-btn.checked { background:rgba(45,74,62,0.08); border-color:var(--accent2); color:var(--accent); }
+
+  /* ── QR ── */
+  .qr-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; padding:8px 0; }
+  .qr-box { background:#fff; border-radius:10px; padding:14px; border:1px solid var(--border); }
+  .checkin-log { display:flex; flex-direction:column; gap:6px; }
+  .checkin-entry { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:var(--surface2); border-radius:7px; font-size:13px; }
+  .checkin-time { font-family:'DM Mono',monospace; font-size:11px; color:var(--text2); }
+
+  /* ── Category manager ── */
+  .cat-row { display:flex; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); gap:10px; }
+  .cat-row:last-child { border-bottom:none; }
+  .cat-name-input { flex:1; background:none; border:none; color:var(--text); font-family:inherit; font-size:13px; padding:2px 0; outline:none; }
+  .cat-name-input:focus { color:var(--accent); }
+  .color-swatch { width:14px; height:14px; border-radius:50%; border:2px solid transparent; cursor:pointer; flex-shrink:0; }
+  .color-swatch.selected { border-color:var(--text); }
+  .color-picker-row { display:flex; gap:8px; flex-wrap:wrap; }
+
+  /* ── Stats ── */
+  .detail-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+  .stat-box { background:var(--surface2); border-radius:8px; padding:12px; text-align:center; }
+  .stat-value { font-size:19px; font-weight:600; font-family:'DM Mono',monospace; color:var(--accent); }
+  .stat-label { font-size:10px; color:var(--text3); margin-top:2px; text-transform:uppercase; letter-spacing:0.05em; }
+
+  .lesson-list { display:flex; flex-direction:column; gap:6px; }
+  .lesson-item { background:var(--surface2); border-radius:8px; padding:12px; }
+  .lesson-date { font-size:10px; color:var(--text3); font-family:'DM Mono',monospace; margin-bottom:6px; letter-spacing:0.04em; }
+
+  /* ── Builder ── */
+  .builder-block { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+  .builder-block-header { display:flex; align-items:center; gap:6px; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+  .cat-tags { display:flex; gap:5px; flex-wrap:wrap; flex:1; }
+  .cat-tag-btn { font-size:11px; font-weight:600; padding:4px 11px; border-radius:20px; border:none; cursor:pointer; font-family:inherit; opacity:0.45; background:var(--surface2); color:var(--text2); transition:opacity 0.15s; }
+  .cat-tag-btn.active { opacity:1; }
+  .remove-block { margin-left:auto; background:none; border:none; color:var(--text3); cursor:pointer; font-size:18px; line-height:1; padding:2px 4px; border-radius:4px; flex-shrink:0; }
+  .remove-block:hover { color:var(--danger); }
+  .exercise-name-wrap { position:relative; margin-bottom:10px; }
+  .exercise-name-wrap input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 36px 8px 12px; color:var(--text); font-family:inherit; font-size:14px; font-weight:600; outline:none; }
+  .exercise-name-wrap input:focus { border-color:var(--accent2); background:var(--surface); }
+  .exercise-name-wrap input::placeholder { color:var(--text3); font-weight:400; font-size:13px; }
+  .exercise-dropdown-btn { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text3); cursor:pointer; font-size:13px; padding:2px; }
+  .exercise-history-list { position:absolute; top:100%; left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:8px; z-index:300; max-height:160px; overflow-y:auto; margin-top:2px; display:none; box-shadow:0 4px 20px rgba(0,0,0,0.1); }
+  .exercise-history-list.open { display:block; }
+  .exercise-history-item { padding:8px 12px; cursor:pointer; font-size:13px; transition:background 0.1s; }
+  .exercise-history-item:hover { background:var(--surface2); color:var(--accent); }
+  .exercise-history-empty { padding:10px; font-size:12px; color:var(--text3); text-align:center; }
+  .sets-container { display:flex; flex-direction:column; gap:5px; margin-bottom:6px; }
+  .set-row { display:grid; grid-template-columns:18px repeat(3,1fr) 24px; gap:6px; align-items:center; }
+  .set-num { font-size:11px; color:var(--text3); font-family:'DM Mono',monospace; text-align:center; }
+  .set-cell { display:flex; align-items:center; background:var(--surface2); border:1px solid var(--border); border-radius:6px; overflow:hidden; }
+  .set-cell:focus-within { border-color:var(--accent2); }
+  .set-input { flex:1; background:transparent; border:none; padding:0 4px; color:var(--text); font-family:'DM Mono',monospace; font-size:13px; outline:none; text-align:center; width:100%; height:30px; min-width:0; }
+  .set-unit { font-size:10px; color:var(--text3); padding:0 5px; font-family:'DM Mono',monospace; white-space:nowrap; border-left:1px solid var(--border); background:var(--surface3); align-self:stretch; display:flex; align-items:center; }
+  .remove-set { background:none; border:none; color:var(--text3); cursor:pointer; font-size:14px; padding:0 2px; }
+  .remove-set:hover { color:var(--danger); }
+  .add-set-btn { background:none; border:1px dashed var(--border); color:var(--text3); border-radius:6px; padding:5px 8px; font-size:11px; font-family:inherit; cursor:pointer; width:100%; margin-bottom:4px; text-align:center; transition:all 0.15s; }
+  .add-set-btn:hover { border-color:var(--accent2); color:var(--accent); }
+  .add-note-btn { background:none; border:none; color:var(--text3); padding:2px 4px; font-size:11px; font-family:inherit; cursor:pointer; display:block; margin-top:2px; }
+  .add-note-btn:hover { color:var(--accent2); }
+  .exercise-note-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:var(--text2); font-family:inherit; font-size:12px; outline:none; margin-top:6px; }
+  .exercise-note-input:focus { border-color:var(--accent2); }
+  .exercise-note-input::placeholder { color:var(--text3); }
+  textarea.exercise-note-input { resize:vertical; min-height:60px; line-height:1.5; }
+  .add-block-btn { width:100%; background:none; border:2px dashed var(--border); color:var(--text3); border-radius:8px; padding:10px; cursor:pointer; font-family:inherit; font-size:13px; margin-bottom:10px; transition:all 0.15s; }
+  .add-block-btn:hover { border-color:var(--accent2); color:var(--accent); }
+
+  /* ── Exercise display ── */
+  .blocks-wrap { background:var(--surface2); border-radius:7px; padding:6px 10px; }
+  .exercise-display { display:flex; align-items:baseline; gap:6px; padding:3px 0; border-bottom:1px solid var(--border); line-height:1.4; }
+  .exercise-display:last-child { border-bottom:none; }
+  .exercise-display-name { font-weight:600; font-size:12px; flex-shrink:0; color:var(--text); }
+  .sets-chips { display:flex; flex-wrap:wrap; gap:3px; flex:1; align-items:baseline; }
+  .set-chip { font-family:'DM Mono',monospace; font-size:11px; color:var(--text2); }
+  .set-chip + .set-chip::before { content:'·'; color:var(--text3); margin-right:2px; }
+  .exercise-note-display { font-size:10px; color:var(--text3); font-style:italic; }
+  .notes-display { font-size:11px; color:var(--text3); font-style:italic; padding:3px 0; }
+
+  /* ── Last lesson ── */
+  .last-lesson-panel { border:1px solid var(--border); border-radius:8px; margin-bottom:16px; overflow:hidden; }
+  .last-lesson-toggle { width:100%; background:var(--surface2); border:none; color:var(--text2); padding:8px 12px; text-align:left; cursor:pointer; font-family:inherit; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; display:flex; justify-content:space-between; align-items:center; }
+  .last-lesson-toggle:hover { color:var(--accent); }
+  .last-lesson-arrow { font-size:9px; transition:transform 0.2s; }
+  .last-lesson-body { display:none; padding:10px 12px; background:var(--surface); border-top:1px solid var(--border); }
+  .last-lesson-body.open { display:block; }
+
+  /* ── Payments ── */
+  .payment-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .payment-item:last-child { border-bottom:none; }
+  .payment-amount { font-family:'DM Mono',monospace; color:var(--accent); font-weight:500; }
+  .payment-date { color:var(--text3); font-size:11px; }
+  .per-session { font-size:11px; color:var(--text3); margin-top:2px; }
+
+  /* ── YTD strip ── */
+  .ytd-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+  .ytd-box { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; }
+  .ytd-val { font-size:17px; font-weight:600; font-family:'DM Mono',monospace; color:var(--accent); }
+  .ytd-label { font-size:10px; color:var(--text3); margin-top:2px; text-transform:uppercase; letter-spacing:0.05em; }
+
+  /* ── Bar chart ── */
+  .chart-wrap { margin-bottom:16px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .chart-label { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px; }
+  #revenue-chart { width:100%; display:block; cursor:pointer; }
+
+  /* ── Monthly ── */
+  .month-tabs { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+  .month-tab { padding:5px 12px; border-radius:4px; border:1px solid var(--border); background:none; color:var(--text2); cursor:pointer; font-family:inherit; font-size:12px; }
+  .month-tab:hover { color:var(--text); border-color:var(--text3); }
+  .month-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .monthly-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+  .monthly-breakdown { display:flex; flex-direction:column; gap:0; margin-bottom:16px; }
+  .breakdown-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .breakdown-row:last-child { border-bottom:none; }
+  .breakdown-val { font-family:'DM Mono',monospace; color:var(--accent); font-weight:500; }
+
+  /* ── Expense ── */
+  .expense-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .expense-item:last-child { border-bottom:none; }
+  .expense-amount { font-family:'DM Mono',monospace; color:var(--danger); font-weight:500; }
+  .expense-cat { font-size:10px; padding:2px 7px; border-radius:4px; background:rgba(192,57,43,0.07); color:var(--danger); font-weight:600; }
+  .net-profit-row { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:8px; margin-top:8px; }
+  .net-profit-row.positive { background:rgba(45,74,62,0.06); }
+  .net-profit-row.negative { background:rgba(192,57,43,0.06); }
+  .net-profit-label { font-size:12px; font-weight:600; color:var(--text2); }
+  .net-profit-val { font-family:'DM Mono',monospace; font-size:15px; font-weight:600; }
+
+  .divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+  .search-bar { position:relative; margin-bottom:16px; }
+  .search-bar input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:9px 16px 9px 34px; color:var(--text); font-family:inherit; font-size:13px; outline:none; }
+  .search-bar input:focus { border-color:var(--accent2); }
+  .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--text3); font-size:13px; }
+
+  /* ── FAB ── */
+  .fab {
+    position:fixed; bottom:28px; right:24px; width:50px; height:50px;
+    border-radius:50%; background:var(--accent); color:#fff; border:none;
+    font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 16px rgba(45,74,62,0.3); transition:all 0.2s; z-index:150;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .fab:hover { transform:scale(1.06); }
+  .fab:active { transform:scale(0.95); }
+
+  .no-data { text-align:center; padding:48px 20px; color:var(--text3); }
+  .no-data .icon { font-size:32px; margin-bottom:10px; }
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* ════════════════════════════════
+     響應式斷點系統
+     sm  ≤ 480px   (手機直式)
+     md  ≤ 600px   (手機橫式 / 小平板)
+     lg  ≥ 900px   (桌機)
+  ════════════════════════════════ */
+
+  /* ── 桌機加寬 ── */
+  @media(min-width:900px) {
+    .main { max-width:960px; padding:32px 40px; }
+    header { padding:16px 40px; }
+    .student-grid { grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+    .day-list { gap:10px; }
+    .schedule-slot { padding:12px 18px; }
+    .modal { border-radius:16px; margin-bottom:40px; }
+  }
+
+  /* ── 平板 (601–899px) ── */
+  @media(min-width:601px) and (max-width:899px) {
+    .main { padding:20px 24px; }
+    .student-grid { grid-template-columns:repeat(2,1fr); }
+    .monthly-grid { grid-template-columns:repeat(3,1fr); }
+  }
+
+  /* ── 手機 ≤ 600px ── */
+  @media(max-width:600px) {
+    .form-row { grid-template-columns:1fr; }
+    .btn-xs, .btn-sm { min-height:36px; }
+    .checkin-btn { min-height:36px; padding:6px 8px; }
+    .main { padding:16px 14px; }
+    header { padding:10px 16px; }
+    .logo { font-size:14px; }
+    .week-title { font-size:12px; }
+    .back-today-btn { font-size:10px; padding:3px 8px; }
+    .today-strip { padding:10px 12px; gap:10px; }
+    .student-grid { grid-template-columns:1fr; gap:8px; }
+    /* 月份 tab 滾動 */
+    .month-tabs { flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .month-tabs::-webkit-scrollbar { display:none; }
+    .month-tab { flex-shrink:0; }
+    /* 收入頁 section title 按鈕 */
+    .section-title { align-items:flex-start !important; }
+  }
+
+  /* ── 手機小 ≤ 480px ── */
+  @media(max-width:480px) {
+    .main { padding:12px 10px; }
+    /* 課表 slot：隱藏狀態文字，按鈕變緊湊 */
+    .slot-status { display:none; }
+    .schedule-slot { padding:9px 10px; gap:5px; }
+    .slot-time { min-width:36px; font-size:10px; }
+    .slot-name { font-size:12px; }
+    .checkin-btn { padding:4px 6px; font-size:10px; min-height:32px; }
+    /* stats 格子 3→2 欄 */
+    .ytd-strip { grid-template-columns:1fr 1fr; }
+    .monthly-grid { grid-template-columns:1fr 1fr; }
+    .ytd-val { font-size:15px; }
+    .stat-value { font-size:16px; }
+    /* breakdown row 垂直排列 */
+    .breakdown-row { flex-direction:column; align-items:flex-start; gap:3px; padding:8px 0; }
+    .breakdown-row > span:last-child { width:100%; justify-content:flex-start !important; gap:10px !important; }
+    /* week nav */
+    .week-nav .btn-sm { padding:5px 8px; font-size:11px; }
+    /* section 標題 */
+    .section-title { font-size:10px; }
+    /* today strip 緊縮 */
+    .today-strip-stat { font-size:11px; }
+  }
+
+  /* ── 超小手機 ≤ 360px ── */
+  @media(max-width:360px) {
+    .detail-stats { grid-template-columns:1fr 1fr; }
+    .ytd-strip { grid-template-columns:1fr 1fr; }
+    .badge { font-size:10px; padding:2px 6px; }
+    .student-name { font-size:14px; }
+    .modal { padding:20px 16px; padding-bottom:max(28px,env(safe-area-inset-bottom)); }
+    .set-row { grid-template-columns:12px 1fr 1fr 1fr auto; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">Coach<span>OS</span></div>
+    <nav class="top-nav">
+      <button class="active" onclick="showView('schedule')">課表</button>
+      <button onclick="showView('students')">學生</button>
+      <button onclick="showView('payments')">收入</button>
+      <button onclick="openCategoryManager()" style="font-size:16px;padding:6px 10px">⚙︎</button>
+    </nav>
+  </header>
+
+  <div class="main">
+    <div id="view-schedule" class="view active">
+      <div class="section-title">課表</div>
+      <div class="week-nav">
+        <button class="btn btn-secondary btn-sm" onclick="changeWeek(-1)">← 上週</button>
+        <div class="week-title" id="week-range"></div>
+        <button class="btn btn-secondary btn-sm" onclick="changeWeek(1)">下週 →</button>
+      </div>
+      <div id="back-today-wrap" style="text-align:center;margin-bottom:10px;display:none">
+        <button class="back-today-btn" onclick="weekOffset=0;renderSchedule()">回到本週</button>
+      </div>
+      <div id="today-strip-wrap"></div>
+      <div class="day-list" id="day-list"></div>
+    </div>
+
+    <div id="view-students" class="view">
+      <div class="section-title">學生管理</div>
+      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="student-search" placeholder="搜尋學生姓名..." oninput="renderStudents()"></div>
+      <div class="student-grid" id="student-grid"></div>
+    </div>
+
+    <div id="view-payments" class="view">
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>收入統計</span>
+        <button class="btn btn-secondary btn-sm" onclick="openExpenseModal()">＋ 支出</button>
+      </div>
+      <div id="ytd-strip"></div>
+      <div class="chart-wrap" id="chart-wrap" style="display:none">
+        <div class="chart-label">近 6 個月課堂收入</div>
+        <canvas id="revenue-chart" height="80"></canvas>
+      </div>
+      <div id="month-tabs" class="month-tabs"></div>
+      <div id="monthly-stats"></div>
+      <hr class="divider">
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">所有付款記錄</div>
+      <div id="payment-list-all"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav (mobile) -->
+<nav class="bottom-nav">
+  <button onclick="showView('schedule')" id="bnav-schedule" class="active">
+    <span class="bnav-icon">📅</span><span class="bnav-label">課表</span>
+  </button>
+  <button onclick="showView('students')" id="bnav-students">
+    <span class="bnav-icon">👤</span><span class="bnav-label">學生</span>
+  </button>
+  <button onclick="showView('payments')" id="bnav-payments">
+    <span class="bnav-icon">💰</span><span class="bnav-label">收入</span>
+  </button>
+  <button onclick="openCategoryManager()">
+    <span class="bnav-icon">⚙︎</span><span class="bnav-label">設定</span>
+  </button>
+</nav>
+
+<button class="fab" id="fab-btn" onclick="handleFab()">＋</button>
+
+<!-- Category Manager Modal -->
+<div class="modal-overlay" id="modal-categories">
+  <div class="modal" style="max-width:360px;padding:28px 24px;padding-bottom:max(36px,env(safe-area-inset-bottom))">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+      <div style="font-size:15px;font-weight:700;letter-spacing:0.02em">分類</div>
+      <button class="modal-close" onclick="closeModal('modal-categories')">×</button>
+    </div>
+    <div id="cat-list" style="margin-bottom:20px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input type="text" id="new-cat-label" placeholder="新增分類名稱"
+        style="flex:1;background:none;border:none;border-bottom:1px solid var(--border);padding:6px 2px;color:var(--text);font-family:inherit;font-size:13px;outline:none"
+        onfocus="this.style.borderBottomColor='var(--accent)'"
+        onblur="this.style.borderBottomColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')addCategory()">
+      <button onclick="addCategory()" style="background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer;padding:0 4px;line-height:1">＋</button>
+    </div>
+    <div class="color-picker-row" id="color-picker" style="margin-bottom:0"></div>
+    <input type="hidden" id="new-cat-color" value="green">
+  </div>
+</div>
+
+<!-- QR Check-in Modal -->
+<div class="modal-overlay" id="modal-qr">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title"><span id="qr-title">學生簽到</span><button class="modal-close" onclick="closeModal('modal-qr')">×</button></div>
+    <div class="qr-wrap">
+      <div class="qr-box"><canvas id="qr-canvas" width="200" height="200"></canvas></div>
+      <div class="qr-link" style="font-size:12px;color:var(--text2);text-align:center;word-break:break-all">
+        學生掃描 QR Code 或點擊連結簽到<br>
+        <a id="qr-link-text" href="#" target="_blank" style="color:var(--accent)"></a>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="copyCheckinLink()">複製連結</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="max-width:320px;text-align:center">
+    <div id="confirm-msg" style="font-size:15px;margin-bottom:20px;line-height:1.6"></div>
+    <div class="btn-group" style="justify-content:center">
+      <button class="btn btn-danger" id="confirm-ok">確定</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-confirm')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Student -->
+<div class="modal-overlay" id="modal-add-student">
+  <div class="modal">
+    <div class="modal-title">新增學生 <button class="modal-close" onclick="closeModal('modal-add-student')">×</button></div>
+    <div class="form-group"><label>學生姓名</label><input type="text" id="new-student-name" placeholder="輸入姓名"></div>
+    <div class="form-row">
+      <div class="form-group"><label>購買堂數</label><input type="number" id="new-student-sessions" placeholder="10" min="1"></div>
+      <div class="form-group"><label>付款金額（元）</label><input type="number" id="new-student-amount" placeholder="5000"></div>
+    </div>
+    <div id="new-student-per-session" style="font-size:12px;color:var(--text2);margin-top:-8px;margin-bottom:12px"></div>
+    <div class="form-group"><label>付款日期</label><input type="date" id="new-student-date"></div>
+    <div class="form-row">
+      <div class="form-group"><label>續費提醒門檻（堂）</label><input type="number" id="new-student-threshold" placeholder="3" min="1"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end"><div style="font-size:11px;color:var(--text3);padding-bottom:4px">剩餘堂數 ≤ 門檻時顯示警示，預設 3 堂</div></div>
+    </div>
+    <div class="form-group"><label>備注</label><textarea id="new-student-notes" placeholder="任何備注..."></textarea></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="addStudent()">新增學生</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-student')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Schedule -->
+<div class="modal-overlay" id="modal-add-schedule">
+  <div class="modal">
+    <div class="modal-title">新增課程 <button class="modal-close" onclick="closeModal('modal-add-schedule')">×</button></div>
+    <div class="form-group"><label>學生</label><select id="schedule-student"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>日期</label><input type="date" id="schedule-date"></div>
+      <div class="form-group"><label>時間</label><input type="time" id="schedule-time" value="09:00"></div>
+    </div>
+    <div class="form-group">
+      <label>每週重複次數 <span id="repeat-preview" style="color:var(--accent2);font-family:'DM Mono',monospace;font-weight:600"></span></label>
+      <input type="number" id="schedule-repeat" placeholder="留空 = 只排這一堂" min="1" max="104" inputmode="numeric"
+        oninput="document.getElementById('repeat-preview').textContent=this.value?'→ 共'+(parseInt(this.value)+1)+'堂':''">
+    </div>
+    <div class="form-group">
+      <label>訓練內容（備課）</label>
+      <div id="schedule-builder"></div>
+      <button class="add-block-btn" onclick="addBuilderBlock('schedule-builder')">＋ 新增訓練項目</button>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="addSchedule()">新增課程</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-schedule')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Student Detail -->
+<div class="modal-overlay" id="modal-student-detail">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title"><span id="detail-student-name"></span><button class="modal-close" onclick="closeModal('modal-student-detail')">×</button></div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- Lesson Record -->
+<div class="modal-overlay" id="modal-lesson-record">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title"><span id="lesson-record-title">上課記錄</span><button class="modal-close" onclick="closeModal('modal-lesson-record')">×</button></div>
+    <div class="last-lesson-panel" id="last-lesson-panel" style="display:none">
+      <button class="last-lesson-toggle" id="last-lesson-btn" onclick="toggleLastLesson()">
+        <span id="last-lesson-label" style="color:var(--accent2)">上次記錄</span>
+        <span id="last-lesson-arrow" class="last-lesson-arrow">▾</span>
+      </button>
+      <div class="last-lesson-body" id="last-lesson-body"></div>
+    </div>
+    <div class="form-group">
+      <label>訓練內容</label>
+      <div id="lesson-builder"></div>
+      <button class="add-block-btn" onclick="addBuilderBlock('lesson-builder')">＋ 新增訓練項目</button>
+    </div>
+    <div class="form-group"><label>上課狀況 / 備注</label><textarea id="lesson-notes" placeholder="學生狀況、需要注意的事..."></textarea></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveLessonRecord()">儲存記錄</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-lesson-record')">關閉</button>
+      <button class="btn btn-danger btn-sm" id="cancel-record-btn" onclick="cancelLessonRecord()" style="display:none">取消登入</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Expense -->
+<div class="modal-overlay" id="modal-add-expense">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">新增支出 <button class="modal-close" onclick="closeModal('modal-add-expense')">×</button></div>
+    <div class="form-group">
+      <label>支出類別</label>
+      <select id="expense-cat">
+        <option value="venue">場地租金</option>
+        <option value="transport">交通</option>
+        <option value="other">其他</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>金額（元）</label><input type="number" id="expense-amount" placeholder="1000" min="1" inputmode="numeric"></div>
+      <div class="form-group"><label>日期</label><input type="date" id="expense-date"></div>
+    </div>
+    <div class="form-group"><label>備注</label><input type="text" id="expense-note" placeholder="例：場地月租 4月"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="addExpense()">儲存</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-expense')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Payment -->
+<div class="modal-overlay" id="modal-add-payment">
+  <div class="modal">
+    <div class="modal-title">續費 / 新增付款 <button class="modal-close" onclick="closeModal('modal-add-payment')">×</button></div>
+    <input type="hidden" id="payment-student-id">
+    <div class="form-row">
+      <div class="form-group"><label>購買堂數</label><input type="number" id="payment-sessions" placeholder="10" min="1" oninput="updatePerSessionPreview()"></div>
+      <div class="form-group"><label>付款金額（元）</label><input type="number" id="payment-amount" placeholder="5000" oninput="updatePerSessionPreview()"></div>
+    </div>
+    <div id="per-session-preview" style="font-size:12px;color:var(--accent2);margin-top:-8px;margin-bottom:12px;font-family:'DM Mono',monospace"></div>
+    <div class="form-group"><label>付款日期</label><input type="date" id="payment-date"></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="addPayment()">儲存</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-payment')">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Data ──
+let data = JSON.parse(localStorage.getItem('coachOS_v2')||'null') || {students:[],schedules:[],expenses:[]};
+if(!data.expenses) data.expenses = [];
+function save() { localStorage.setItem('coachOS_v2',JSON.stringify(data)); }
+function genId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function fmtDate(d) { return d.toISOString().slice(0,10); }
+
+// ── Nav ──
+let currentView = 'schedule';
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('nav.top-nav button').forEach((el,i)=>el.classList.toggle('active',['schedule','students','payments'][i]===v));
+  // bottom nav
+  ['schedule','students','payments'].forEach(name=>{
+    const btn=document.getElementById('bnav-'+name);
+    if(btn) btn.classList.toggle('active', name===v);
+  });
+  document.getElementById('view-'+v).classList.add('active');
+  currentView=v;
+  if(v==='schedule') renderSchedule();
+  if(v==='students') renderStudents();
+  if(v==='payments') renderPayments();
+  // Update FAB label
+  const fab = document.getElementById('fab-btn');
+  if(fab) fab.textContent = v==='students' ? '＋' : '＋';
+}
+
+function handleFab() {
+  if(currentView==='students') openModal('modal-add-student');
+  else if(currentView==='schedule') openAddScheduleModal();
+  else if(currentView==='payments') openExpenseModal();
+  else openModal('modal-add-student');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Per-session preview for new student
+['new-student-sessions','new-student-amount'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{
+    const s=parseInt(document.getElementById('new-student-sessions').value);
+    const a=parseInt(document.getElementById('new-student-amount').value);
+    document.getElementById('new-student-per-session').textContent = s&&a ? `平均每堂 $${Math.round(a/s).toLocaleString()} 元` : '';
+  });
+});
+
+// ── Training Block Builder ──
+const NOTES_CAT = {id:'notes', label:'備注', color:'teal'};
+const CAT_COLORS = ['green','yellow','blue','purple','orange','pink','red','cyan'];
+const CAT_COLOR_MAP = {
+  green:  {tag:'rgba(200,245,90,0.2)',  text:'#c8f55a'},
+  yellow: {tag:'rgba(245,200,90,0.2)',  text:'#f5c85a'},
+  blue:   {tag:'rgba(90,150,255,0.2)',  text:'#7ab0ff'},
+  purple: {tag:'rgba(180,90,255,0.2)',  text:'#c07aff'},
+  orange: {tag:'rgba(255,160,60,0.2)',  text:'#ffa03c'},
+  pink:   {tag:'rgba(255,90,180,0.2)',  text:'#ff7ac8'},
+  red:    {tag:'rgba(245,90,90,0.2)',   text:'#f55a5a'},
+  cyan:   {tag:'rgba(90,245,200,0.2)',  text:'#5af5c8'},
+};
+function getCategories() { return data.categories || []; }
+function getCatStyle(color) { return CAT_COLOR_MAP[color] || CAT_COLOR_MAP['green']; }
+function getCatById(id) {
+  if(id==='notes') return NOTES_CAT;
+  return getCategories().find(c=>c.id===id) || null;
+}
+
+function addBuilderBlock(containerId, block=null) {
+  const container = document.getElementById(containerId);
+  const id = 'blk_'+genId();
+  const cats = getCategories();
+  const type = block?.type || (cats[0]?.id || 'notes');
+  const name = block?.name||'';
+  const sets = block?.sets||[{sets:'',reps:'',weight:''}];
+  const exerciseNote = block?.exerciseNote||'';
+  const div = document.createElement('div');
+  div.className='builder-block'; div.dataset.blockId=id;
+  div.innerHTML=`
+    <div class="builder-block-header">
+      <div class="cat-tags" id="cattags_${id}">
+        ${cats.map(c=>{
+          const s = getCatStyle(c.color||'green');
+          return `<button class="cat-tag-btn${c.id===type?' active':''}"
+            style="${c.id===type?`background:${s.tag};color:${s.text}`:''}"
+            data-catid="${c.id}" onclick="selectCatTag('${id}','${c.id}')">${c.label}</button>`;
+        }).join('')}
+      </div>
+      <input type="hidden" id="type_${id}" value="${type}">
+      <button class="remove-block" onclick="removeBuilderBlock('${id}')">×</button>
+    </div>
+    <div id="body_${id}">${buildBlockBody(id, type, name, sets, exerciseNote)}</div>`;
+  container.appendChild(div);
+}
+
+function buildBlockBody(id, type, name='', sets=[{sets:'',reps:'',weight:''}], exerciseNote='') {
+  if(type==='notes') {
+    return `<textarea class="exercise-note-input" id="note_${id}" placeholder="備注內容..." rows="3">${exerciseNote}</textarea>`;
+  }
+  const setsHtml = sets.map((s,i)=>buildSetRow(id,i,s)).join('');
+  return `
+    <div class="exercise-name-wrap">
+      <input id="name_${id}" placeholder="動作名稱（輸入或選擇歷史動作）" value="${name}"
+        oninput="filterExerciseHistory('${id}')" onfocus="openExerciseHistory('${id}')" autocomplete="off">
+      <button class="exercise-dropdown-btn" type="button" onclick="toggleExerciseHistory('${id}')">▾</button>
+      <div class="exercise-history-list" id="hist_${id}"></div>
+    </div>
+    <div class="sets-container" id="sets_${id}">${setsHtml}</div>
+    <button class="add-set-btn" onclick="addSetRow('${id}')">＋ 新增一組</button>
+    <div id="notewrap_${id}" style="display:${exerciseNote?'block':'none'}">
+      <input class="exercise-note-input" id="enote_${id}" placeholder="動作備注..." value="${exerciseNote}">
+    </div>
+    <button class="add-note-btn" onclick="toggleExerciseNote('${id}')">＋ 動作備注</button>`;
+}
+
+function buildSetRow(blockId, index, set={}) {
+  const sid = 'set_'+blockId+'_'+index+'_'+Date.now();
+  return `<div class="set-row" id="${sid}">
+    <span class="set-num">${index+1}</span>
+    <div class="set-cell"><input class="set-input" placeholder="組" value="${set.sets||''}" data-field="sets" inputmode="numeric" pattern="[0-9]*"><span class="set-unit">組</span></div>
+    <div class="set-cell"><input class="set-input" placeholder="次" value="${set.reps||''}" data-field="reps" inputmode="numeric" pattern="[0-9]*"><span class="set-unit">次</span></div>
+    <div class="set-cell"><input class="set-input" placeholder="0" value="${set.weight||''}" data-field="weight" inputmode="decimal" pattern="[0-9.]*"><span class="set-unit">kg</span></div>
+    <button class="remove-set" onclick="this.closest('.set-row').remove();renumberSets('${blockId}')">×</button>
+  </div>`;
+}
+
+function renumberSets(blockId) {
+  document.getElementById('sets_'+blockId)?.querySelectorAll('.set-row').forEach((row,i)=>{
+    row.querySelector('.set-num').textContent = i+1;
+  });
+}
+function addSetRow(blockId) {
+  const container = document.getElementById('sets_'+blockId); if(!container) return;
+  container.insertAdjacentHTML('beforeend', buildSetRow(blockId, container.children.length));
+}
+function selectCatTag(blockId, catId) {
+  document.getElementById('type_'+blockId).value = catId;
+  const cats = getCategories();
+  document.getElementById('cattags_'+blockId)?.querySelectorAll('.cat-tag-btn').forEach(btn=>{
+    const isActive = btn.dataset.catid === catId;
+    const cat = cats.find(c=>c.id===btn.dataset.catid);
+    const s = getCatStyle(cat?.color||'cyan');
+    btn.classList.toggle('active', isActive);
+    btn.style.background = isActive ? s.tag : '';
+    btn.style.color = isActive ? s.text : '';
+  });
+  document.getElementById('body_'+blockId).innerHTML = buildBlockBody(blockId, catId);
+}
+function toggleExerciseNote(blockId) {
+  const wrap = document.getElementById('notewrap_'+blockId); if(!wrap) return;
+  wrap.style.display = wrap.style.display==='none' ? 'block' : 'none';
+  if(wrap.style.display!=='none') document.getElementById('enote_'+blockId)?.focus();
+}
+function removeBuilderBlock(id) { document.querySelector('[data-block-id="'+id+'"]')?.remove(); }
+
+function getBuilderBlocks(cid) {
+  const blocks=[];
+  document.getElementById(cid).querySelectorAll('.builder-block').forEach(div=>{
+    const id=div.dataset.blockId;
+    const type=document.getElementById('type_'+id)?.value||'notes';
+    if(type==='notes') {
+      const note=(document.getElementById('note_'+id)?.value||'').trim();
+      if(note) blocks.push({type,exerciseNote:note});
+      return;
+    }
+    const name=(document.getElementById('name_'+id)?.value||'').trim();
+    const exerciseNote=(document.getElementById('enote_'+id)?.value||'').trim();
+    const sets=[];
+    document.getElementById('sets_'+id)?.querySelectorAll('.set-row').forEach(row=>{
+      const inputs=row.querySelectorAll('.set-input');
+      const s={sets:inputs[0]?.value.trim(),reps:inputs[1]?.value.trim(),weight:inputs[2]?.value.trim()};
+      if(s.sets||s.reps||s.weight) sets.push(s);
+    });
+    if(name||sets.length) blocks.push({type,name,sets,exerciseNote});
+  });
+  return blocks;
+}
+function clearBuilder(cid) { document.getElementById(cid).innerHTML=''; }
+
+function renderBlocksDisplay(blocks) {
+  if(!blocks||!blocks.length) return '<span style="color:var(--text3);font-size:12px">無訓練內容</span>';
+  return '<div class="blocks-wrap">' + blocks.map(b=>{
+    const cat = getCatById(b.type);
+    const catStyle = cat ? getCatStyle(cat.color) : null;
+    if(b.type==='notes') return `<div class="exercise-display notes-display">${(b.exerciseNote||'').replace(/\n/g,' ')}</div>`;
+    const chipsHtml = (b.sets||[]).map(s=>{
+      const parts=[];
+      if(s.sets) parts.push(s.sets+'組');
+      if(s.reps) parts.push(s.reps+'次');
+      if(s.weight) parts.push(s.weight+'kg');
+      return parts.length ? `<span class="set-chip">${parts.join('·')}</span>` : '';
+    }).filter(Boolean).join('');
+    const catDot = catStyle ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${catStyle.text};flex-shrink:0;margin-right:2px"></span>` : '';
+    return `<div class="exercise-display">
+      ${catDot}<span class="exercise-display-name">${b.name||'未命名'}</span>
+      <div class="sets-chips">${chipsHtml}</div>
+      ${b.exerciseNote?`<span class="exercise-note-display">${b.exerciseNote}</span>`:''}
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// ── Exercise History ──
+function getExerciseHistory(catId=null) {
+  const counts = {};
+  data.schedules.forEach(slot => {
+    (slot.blocks||[]).forEach(b => {
+      if(b.type==='notes') return;
+      if(catId && b.type!==catId) return;
+      const n = (b.name||'').trim();
+      if(n) counts[n] = (counts[n]||0) + 1;
+    });
+  });
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({name,count}));
+}
+function openExerciseHistory(blockId) {
+  const type = document.getElementById('type_'+blockId)?.value;
+  const q = (document.getElementById('name_'+blockId)?.value||'').toLowerCase();
+  renderHistoryList(blockId, type, q);
+  document.getElementById('hist_'+blockId)?.classList.add('open');
+  setTimeout(()=>{
+    document.addEventListener('click', function closer(e) {
+      if(!e.target.closest('.exercise-name-wrap')) {
+        document.querySelectorAll('.exercise-history-list').forEach(l=>l.classList.remove('open'));
+        document.removeEventListener('click', closer);
+      }
+    });
+  }, 10);
+}
+function toggleExerciseHistory(blockId) {
+  const list = document.getElementById('hist_'+blockId); if(!list) return;
+  if(list.classList.contains('open')) { list.classList.remove('open'); return; }
+  openExerciseHistory(blockId);
+}
+function filterExerciseHistory(blockId) {
+  const type = document.getElementById('type_'+blockId)?.value;
+  const q = (document.getElementById('name_'+blockId)?.value||'').toLowerCase();
+  renderHistoryList(blockId, type, q);
+  document.getElementById('hist_'+blockId)?.classList.add('open');
+}
+function renderHistoryList(blockId, catId, q='') {
+  const list = document.getElementById('hist_'+blockId); if(!list) return;
+  let items = getExerciseHistory(catId==='notes' ? null : catId);
+  if(q) items = items.filter(i=>i.name.toLowerCase().includes(q));
+  if(!items.length) {
+    list.innerHTML = `<div class="exercise-history-empty">${q?'沒有符合的歷史動作':'此分類尚無歷史動作'}</div>`; return;
+  }
+  list.innerHTML = items.map(i=>`<div class="exercise-history-item" onclick="selectExercise('${blockId}','${i.name.replace(/'/g,"\\'")}')">
+    ${i.name}</div>`).join('');
+}
+function selectExercise(blockId, name) {
+  const input = document.getElementById('name_'+blockId); if(!input) return;
+  input.value = name;
+  document.getElementById('hist_'+blockId)?.classList.remove('open');
+}
+
+// ── Category Manager ──
+function appConfirm(msg, onOk) {
+  document.getElementById('confirm-msg').textContent = msg;
+  const btn = document.getElementById('confirm-ok');
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.addEventListener('click', () => { closeModal('modal-confirm'); onOk(); });
+  openModal('modal-confirm');
+}
+function openCategoryManager() { renderCategoryManager(); openModal('modal-categories'); }
+function renderCategoryManager() {
+  const cats = getCategories();
+  document.getElementById('cat-list').innerHTML = !cats.length
+    ? '<div style="color:var(--text3);font-size:12px;padding:12px 0;text-align:center">尚未新增分類</div>'
+    : cats.map(c => {
+        const s = getCatStyle(c.color);
+        return `<div class="cat-row">
+          <span style="width:8px;height:8px;border-radius:50%;background:${s.text};flex-shrink:0;display:inline-block"></span>
+          <input class="cat-name-input" value="${c.label}" onchange="renameCat('${c.id}',this.value)">
+          <button class="remove-block" onclick="deleteCat('${c.id}')">×</button>
+        </div>`;
+      }).join('');
+}
+function renameCat(id, newLabel) {
+  newLabel = newLabel.trim(); if(!newLabel) return;
+  const cat = (data.categories||[]).find(c=>c.id===id);
+  if(cat) { cat.label = newLabel; save(); }
+}
+function addCategory() {
+  const label = document.getElementById('new-cat-label').value.trim();
+  const color = document.getElementById('new-cat-color').value;
+  if(!label) return alert('請輸入分類名稱');
+  if(!data.categories) data.categories = [];
+  data.categories.push({id: genId(), label, color});
+  save(); document.getElementById('new-cat-label').value = ''; renderCategoryManager();
+}
+function deleteCat(id) {
+  appConfirm('刪除此分類？已記錄的動作不受影響。', () => {
+    data.categories = (data.categories||[]).filter(c=>c.id!==id);
+    save(); renderCategoryManager();
+  });
+}
+
+// ── Schedule ──
+let weekOffset=0;
+function getWeekDates(offset=0) {
+  const today=new Date(), day=today.getDay(), mon=new Date(today);
+  mon.setDate(today.getDate()-(day===0?6:day-1)+offset*7);
+  return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+}
+function changeWeek(dir){ weekOffset+=dir; renderSchedule(); }
+
+// Check if a slot is "soon" (within 30 min of now, today only)
+function isSoon(dateStr, timeStr) {
+  const todayStr = fmtDate(new Date());
+  if(dateStr !== todayStr) return false;
+  const now = new Date();
+  const [h, m] = timeStr.split(':').map(Number);
+  const slotMinutes = h * 60 + m;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const diff = slotMinutes - nowMinutes;
+  return diff >= 0 && diff <= 30;
+}
+
+function renderSchedule() {
+  const days=getWeekDates(weekOffset), dayNames=['一','二','三','四','五','六','日'];
+  const todayStr=fmtDate(new Date());
+  const isCurrentWeek = weekOffset === 0;
+
+  document.getElementById('week-range').textContent=`${days[0].getMonth()+1}/${days[0].getDate()} — ${days[6].getMonth()+1}/${days[6].getDate()}`;
+
+  // Back to today button
+  const backWrap = document.getElementById('back-today-wrap');
+  backWrap.style.display = weekOffset !== 0 ? 'block' : 'none';
+
+  // Today strip
+  const todayStripWrap = document.getElementById('today-strip-wrap');
+  if(isCurrentWeek) {
+    const todaySlots = data.schedules.filter(s=>s.date===todayStr);
+    const total = todaySlots.length;
+    const done = todaySlots.filter(s=>s.recorded).length;
+    const pending = total - done;
+    if(total > 0) {
+      todayStripWrap.innerHTML=`<div class="today-strip">
+        <span class="today-strip-title">今日</span>
+        <div class="today-strip-stats">
+          <span class="today-strip-stat"><strong>${total}</strong> 堂課</span>
+          <span class="today-strip-stat"><strong>${done}</strong> 已完成</span>
+          ${pending>0?`<span class="today-strip-stat"><strong>${pending}</strong> 待上課</span>`:''}
+        </div>
+      </div>`;
+    } else {
+      todayStripWrap.innerHTML='';
+    }
+  } else {
+    todayStripWrap.innerHTML='';
+  }
+
+  const container=document.getElementById('day-list'); container.innerHTML='';
+  days.forEach((d,i)=>{
+    const dateStr=fmtDate(d), isToday=dateStr===todayStr;
+    const slots=data.schedules.filter(s=>s.date===dateStr).sort((a,b)=>a.time.localeCompare(b.time));
+    const block=document.createElement('div');
+    block.className='day-block'+(isToday?' today-block':'');
+    const header = document.createElement('div');
+    header.className=`day-header${isToday?' today':''}`;
+    header.innerHTML=`<span>週${dayNames[i]}　${d.getMonth()+1}/${d.getDate()}${isToday?'　今天':''}</span><span style="font-size:11px;font-weight:400;color:var(--accent)">＋</span>`;
+    header.addEventListener('click', ()=>openAddScheduleModal(null, dateStr));
+    block.appendChild(header);
+
+    if(!slots.length) {
+      const empty=document.createElement('div'); empty.className='empty-day'; empty.textContent='無課程'; block.appendChild(empty);
+    } else {
+      slots.forEach(slot=>{
+        const student=data.students.find(s=>s.id===slot.studentId); if(!student) return;
+        const el=document.createElement('div');
+        const recordedClass = slot.recorded ? ' recorded' : (slot.blocks?.length ? ' has-plan' : '');
+        el.className='schedule-slot'+recordedClass;
+        const checkedIn = slot.checkedIn;
+        const soon = isSoon(slot.date, slot.time);
+        const statusText = slot.recorded ? '✓ 已記錄' : (slot.blocks?.length ? '備課完成' : '');
+        el.innerHTML=`
+          <span class="slot-time">${slot.time}</span>
+          ${soon ? '<span class="soon-dot"></span>' : ''}
+          <span class="slot-name">${student.name}</span>
+          <span class="slot-status">${statusText}</span>
+          <button class="checkin-btn ${checkedIn?'checked':''}" data-action="checkin" data-id="${slot.id}" data-checked="${checkedIn}">${checkedIn?'✓ 已簽到':'簽到'}</button>
+          <button class="checkin-btn" style="padding:5px 8px" data-action="qr" data-id="${slot.id}" title="QR碼">⬜</button>
+          <button class="checkin-btn" style="padding:5px 8px;color:var(--danger);border-color:var(--danger)" data-action="delete" data-id="${slot.id}" title="刪除課程">✕</button>`;
+        el.addEventListener('click', e => {
+          const btn = e.target.closest('[data-action]');
+          if(btn) {
+            e.stopPropagation();
+            const action = btn.dataset.action, id = btn.dataset.id;
+            if(action==='checkin') handleCheckinBtn(id, btn.dataset.checked==='true');
+            else if(action==='qr') showQR(id);
+            else if(action==='delete') deleteScheduleSlot(id);
+            return;
+          }
+          openLessonModal(slot);
+        });
+        block.appendChild(el);
+      });
+    }
+    container.appendChild(block);
+  });
+}
+
+function openAddScheduleModal(studentId=null, date=null) {
+  const sel=document.getElementById('schedule-student');
+  sel.innerHTML=data.students.length?data.students.map(s=>`<option value="${s.id}"${s.id===studentId?' selected':''}>${s.name}</option>`).join(''):'<option>請先新增學生</option>';
+  document.getElementById('schedule-date').value=date||fmtDate(new Date());
+  document.getElementById('schedule-time').value='09:00';
+  document.getElementById('schedule-repeat').value='';
+  clearBuilder('schedule-builder');
+  const firstCat = getCategories()[0];
+  addBuilderBlock('schedule-builder',{type:firstCat?.id||'notes',name:'',sets:[{sets:'',reps:'',weight:''}],exerciseNote:''});
+  openModal('modal-add-schedule');
+}
+
+function addSchedule() {
+  const studentId=document.getElementById('schedule-student').value;
+  const date=document.getElementById('schedule-date').value;
+  const time=document.getElementById('schedule-time').value;
+  const blocks=getBuilderBlocks('schedule-builder');
+  if(!studentId||!date) return alert('請填寫學生和日期');
+  const repeatTimes = parseInt(document.getElementById('schedule-repeat').value)||0;
+  const weeks = 1 + repeatTimes;
+  function addWeeks(dateStr, w) {
+    const [y,m,d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m-1, d);
+    dt.setDate(dt.getDate() + w*7);
+    return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  }
+  for(let w=0; w<weeks; w++) {
+    data.schedules.push({id:genId(),studentId,date:w===0?date:addWeeks(date,w),time,blocks:JSON.parse(JSON.stringify(blocks)),recorded:false,notes:''});
+  }
+  save(); closeModal('modal-add-schedule'); renderSchedule();
+}
+
+// ── Lesson Record ──
+let currentLessonId=null;
+
+function getPreviousLesson(studentId, beforeDate, beforeTime) {
+  const beforeKey = beforeDate + 'T' + beforeTime;
+  return data.schedules.filter(s=>s.studentId===studentId&&s.recorded&&(s.date+'T'+s.time)<beforeKey)
+    .sort((a,b)=>(b.date+'T'+b.time).localeCompare(a.date+'T'+a.time))[0] || null;
+}
+
+function openLessonModal(slot) {
+  const student=data.students.find(s=>s.id===slot.studentId);
+  currentLessonId=slot.id;
+  document.getElementById('lesson-record-title').textContent=`${student?.name} — ${slot.date} ${slot.time}`;
+  const prev = getPreviousLesson(slot.studentId, slot.date, slot.time);
+  const lastPanel = document.getElementById('last-lesson-panel');
+  if(prev) {
+    lastPanel.style.display='block';
+    document.getElementById('last-lesson-label').textContent=`上次記錄 ${prev.date} ${prev.time}`;
+    document.getElementById('last-lesson-body').innerHTML =
+      renderBlocksDisplay(prev.blocks) +
+      (prev.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:6px;font-style:italic">${prev.notes}</div>` : '');
+  } else { lastPanel.style.display='none'; }
+  clearBuilder('lesson-builder');
+  const firstCatId = getCategories()[0]?.id || 'notes';
+  const blocks=slot.blocks?.length?slot.blocks:[{type:firstCatId,name:'',sets:[{sets:'',reps:'',weight:''}],exerciseNote:''}];
+  blocks.forEach(b=>addBuilderBlock('lesson-builder',b));
+  document.getElementById('lesson-notes').value=slot.notes||'';
+  document.getElementById('cancel-record-btn').style.display = slot.recorded ? 'block' : 'none';
+  openModal('modal-lesson-record');
+}
+
+function cancelLessonRecord() {
+  appConfirm('確定取消這堂課的登入？堂數會退回，訓練內容保留。', () => {
+    const slot=data.schedules.find(s=>s.id===currentLessonId); if(!slot) return;
+    slot.recorded=false;
+    // 保留學生的 QR 簽到記錄，只退回課堂扣除
+    if(slot.sessionDeducted) {
+      const student=data.students.find(s=>s.id===slot.studentId);
+      if(student) { student.remainingSessions++; student.completedSessions=Math.max(0,(student.completedSessions||1)-1); }
+      slot.sessionDeducted=false;
+    }
+    document.getElementById('cancel-record-btn').style.display='none';
+    save(); closeModal('modal-lesson-record'); renderSchedule();
+  });
+}
+
+function toggleLastLesson() {
+  const body = document.getElementById('last-lesson-body');
+  const arrow = document.getElementById('last-lesson-arrow');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+function saveLessonRecord() {
+  const slot=data.schedules.find(s=>s.id===currentLessonId); if(!slot) return;
+  slot.blocks=getBuilderBlocks('lesson-builder');
+  slot.notes=document.getElementById('lesson-notes').value.trim();
+  slot.recorded=true;
+  slot.checkedIn=true;
+  if(!slot.checkinTime) slot.checkinTime=new Date().toISOString();
+  if(!slot.sessionDeducted) {
+    const student=data.students.find(s=>s.id===slot.studentId);
+    if(student&&student.remainingSessions>0) { student.remainingSessions--; student.completedSessions=(student.completedSessions||0)+1; slot.sessionDeducted=true; }
+  }
+  save(); closeModal('modal-lesson-record'); renderSchedule();
+}
+
+// ── Students ──
+function getNextLesson(studentId) {
+  const today = fmtDate(new Date());
+  return data.schedules
+    .filter(s=>s.studentId===studentId && !s.recorded && s.date>=today)
+    .sort((a,b)=>a.date.localeCompare(b.date)||(a.time.localeCompare(b.time)))[0] || null;
+}
+
+function renderStudents() {
+  const q=document.getElementById('student-search').value.toLowerCase();
+  const grid=document.getElementById('student-grid');
+  const filtered=data.students.filter(s=>s.name.toLowerCase().includes(q));
+  if(!filtered.length) {
+    grid.innerHTML=`<div class="no-data" style="grid-column:1/-1"><div class="icon">👤</div><div>${q?'找不到學生':'尚未新增學生，點擊 ＋ 開始'}</div></div>`; return;
+  }
+  grid.innerHTML=filtered.map(s=>{
+    const threshold = s.threshold||3;
+    const warn=s.remainingSessions<=threshold&&s.remainingSessions>0, danger=s.remainingSessions===0;
+    const totalPaid=s.payments.reduce((sum,p)=>sum+(p.amount||0),0);
+    const totalBought=s.payments.reduce((sum,p)=>sum+p.sessions,0);
+    const avg=totalBought?Math.round(totalPaid/totalBought):0;
+    const nextLesson = getNextLesson(s.id);
+    const nextStr = nextLesson
+      ? `<div class="student-next-lesson"><span class="next-icon">▸</span> 下次 ${nextLesson.date.slice(5).replace('-','/')} ${nextLesson.time}</div>`
+      : `<div class="student-next-lesson" style="color:var(--text3)"><span class="next-icon">—</span> 尚無排課</div>`;
+    return `<div class="student-card ${danger?'danger':warn?'warning':''}" onclick="openStudentDetail('${s.id}')">
+      <div class="student-name">${s.name}</div>
+      <div class="student-meta">
+        <span class="badge ${danger?'danger':warn?'warning':'accent'}">${s.remainingSessions} 堂剩餘</span>
+        <span class="badge">${s.completedSessions||0} 堂完成</span>
+        ${avg?`<span class="badge teal">$${avg.toLocaleString()}/堂</span>`:''}
+        ${danger?'<span class="badge danger">需續費</span>':''}
+        ${warn&&!danger?'<span class="badge warning">快用完</span>':''}
+      </div>
+      ${nextStr}
+    </div>`;
+  }).join('');
+}
+
+function addStudent() {
+  const name=document.getElementById('new-student-name').value.trim();
+  const sessions=parseInt(document.getElementById('new-student-sessions').value);
+  const amount=parseInt(document.getElementById('new-student-amount').value)||0;
+  const date=document.getElementById('new-student-date').value||fmtDate(new Date());
+  const notes=document.getElementById('new-student-notes').value.trim();
+  const threshold=parseInt(document.getElementById('new-student-threshold').value)||3;
+  if(!name||!sessions) return alert('請填寫姓名和堂數');
+  data.students.push({id:genId(),name,remainingSessions:sessions,completedSessions:0,notes,threshold,payments:[{id:genId(),sessions,amount,date}]});
+  save(); closeModal('modal-add-student');
+  ['new-student-name','new-student-sessions','new-student-amount','new-student-notes','new-student-threshold'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('new-student-per-session').textContent='';
+  renderStudents();
+}
+
+function openStudentDetail(id) {
+  const s=data.students.find(st=>st.id===id); if(!s) return;
+  document.getElementById('detail-student-name').textContent=s.name;
+  const lessons=data.schedules.filter(sl=>sl.studentId===id&&sl.recorded).sort((a,b)=>b.date.localeCompare(a.date));
+  const totalPaid=s.payments.reduce((sum,p)=>sum+(p.amount||0),0);
+  const totalBought=s.payments.reduce((sum,p)=>sum+p.sessions,0);
+  const avg=totalBought?Math.round(totalPaid/totalBought):0;
+  document.getElementById('detail-content').innerHTML=`
+    <div class="detail-stats">
+      <div class="stat-box"><div class="stat-value">${s.remainingSessions}</div><div class="stat-label">剩餘堂數</div></div>
+      <div class="stat-box"><div class="stat-value">${s.completedSessions||0}</div><div class="stat-label">已完成</div></div>
+      <div class="stat-box"><div class="stat-value">$${totalPaid.toLocaleString()}</div><div class="stat-label">總付款</div></div>
+    </div>
+    ${avg?`<div style="text-align:center;margin-top:-6px;margin-bottom:14px;font-size:12px;color:var(--text2)">平均單堂 <span style="color:var(--accent2);font-family:'DM Mono',monospace">$${avg.toLocaleString()}</span> 元</div>`:''}
+    <div class="btn-group" style="margin-bottom:16px">
+      <button class="btn btn-primary btn-sm" onclick="openAddPaymentModal('${id}')">＋ 續費</button>
+      <button class="btn btn-secondary btn-sm" onclick="openAddScheduleForStudent('${id}')">＋ 排課</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteStudent('${id}')">刪除學生</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 12px;background:var(--surface2);border-radius:8px">
+      <span style="font-size:12px;color:var(--text2);flex:1">續費提醒門檻</span>
+      <input type="number" min="1" value="${s.threshold||3}"
+        style="width:52px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-family:'DM Mono',monospace;font-size:13px;text-align:center;outline:none;color:var(--text)"
+        onchange="updateThreshold('${id}',this.value)">
+      <span style="font-size:12px;color:var(--text3)">堂</span>
+    </div>
+    <hr class="divider">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">上課記錄（${lessons.length} 堂）</div>
+    ${!lessons.length?'<div style="color:var(--text3);font-size:13px;padding:8px 0">尚無上課記錄</div>':`<div class="lesson-list">${lessons.map(l=>`
+      <div class="lesson-item">
+        <div class="lesson-date">${l.date}　${l.time}</div>
+        ${renderBlocksDisplay(l.blocks)}
+        ${l.notes?`<div style="font-size:11px;color:var(--text3);margin-top:4px;font-style:italic">${l.notes}</div>`:''}
+      </div>`).join('')}</div>`}
+    <hr class="divider">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">付款記錄</div>
+    ${s.payments.map(p=>{
+      const ps=p.sessions&&p.amount?Math.round(p.amount/p.sessions):0;
+      return `<div class="payment-item"><div><div>${p.sessions} 堂</div><div class="payment-date">${p.date}</div>${ps?`<div class="per-session">$${ps.toLocaleString()}/堂</div>`:''}</div><div class="payment-amount">$${(p.amount||0).toLocaleString()}</div></div>`;
+    }).join('')}`;
+  openModal('modal-student-detail');
+}
+
+function deleteStudent(id) {
+  appConfirm('確定刪除此學生？所有記錄將一併刪除。', () => {
+    data.students=data.students.filter(s=>s.id!==id);
+    data.schedules=data.schedules.filter(s=>s.studentId!==id);
+    save(); closeModal('modal-student-detail'); renderStudents();
+  });
+}
+function openAddScheduleForStudent(sid) { closeModal('modal-student-detail'); openAddScheduleModal(sid); }
+
+function updateThreshold(studentId, val) {
+  const s = data.students.find(st=>st.id===studentId); if(!s) return;
+  s.threshold = Math.max(1, parseInt(val)||3);
+  save(); renderStudents();
+}
+
+// ── Expenses ──
+const EXPENSE_CAT_LABELS = {venue:'場地租金', transport:'交通', other:'其他'};
+
+function openExpenseModal(month=null) {
+  document.getElementById('expense-date').value = month ? month+'-01' : fmtDate(new Date());
+  document.getElementById('expense-amount').value = '';
+  document.getElementById('expense-note').value = '';
+  openModal('modal-add-expense');
+}
+
+function addExpense() {
+  const cat = document.getElementById('expense-cat').value;
+  const amount = parseInt(document.getElementById('expense-amount').value)||0;
+  const date = document.getElementById('expense-date').value||fmtDate(new Date());
+  const note = document.getElementById('expense-note').value.trim();
+  if(!amount) return alert('請填寫金額');
+  data.expenses.push({id:genId(), cat, amount, date, note});
+  save();
+  closeModal('modal-add-expense');
+  ['expense-amount','expense-note'].forEach(id=>document.getElementById(id).value='');
+  renderPayments();
+}
+
+function deleteExpense(id) {
+  appConfirm('確定刪除此支出記錄？', ()=>{
+    data.expenses = data.expenses.filter(e=>e.id!==id);
+    save(); renderPayments();
+  });
+}
+
+// ── Payments ──
+function updatePerSessionPreview() {
+  const s=parseInt(document.getElementById('payment-sessions').value);
+  const a=parseInt(document.getElementById('payment-amount').value);
+  document.getElementById('per-session-preview').textContent=s&&a?`平均每堂 $${Math.round(a/s).toLocaleString()} 元`:'';
+}
+function openAddPaymentModal(studentId) {
+  document.getElementById('payment-student-id').value=studentId;
+  ['payment-sessions','payment-amount'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('payment-date').value=fmtDate(new Date());
+  document.getElementById('per-session-preview').textContent='';
+  closeModal('modal-student-detail'); openModal('modal-add-payment');
+}
+function addPayment() {
+  const studentId=document.getElementById('payment-student-id').value;
+  const sessions=parseInt(document.getElementById('payment-sessions').value);
+  const amount=parseInt(document.getElementById('payment-amount').value)||0;
+  const date=document.getElementById('payment-date').value;
+  if(!sessions) return alert('請填寫堂數');
+  const s=data.students.find(st=>st.id===studentId); if(!s) return;
+  s.payments.push({id:genId(),sessions,amount,date});
+  s.remainingSessions+=sessions;
+  save(); closeModal('modal-add-payment'); renderStudents(); renderPayments();
+}
+
+// ── Revenue chart ──
+// Compute earned revenue for a given YYYY-MM month
+function getMonthEarned(month) {
+  let earned = 0;
+  data.schedules.filter(s=>s.recorded&&s.checkedIn&&s.date.slice(0,7)===month).forEach(slot=>{
+    const student=data.students.find(s=>s.id===slot.studentId); if(!student) return;
+    const totalPaid=student.payments.reduce((sum,p)=>sum+(p.amount||0),0);
+    const totalBought=student.payments.reduce((sum,p)=>sum+p.sessions,0);
+    earned += totalBought ? Math.round(totalPaid/totalBought) : 0;
+  });
+  return earned;
+}
+
+function getLast6Months() {
+  const months = [];
+  const now = new Date();
+  for(let i=5; i>=0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  return months;
+}
+
+let chartMonths = [];
+function drawRevenueChart(months, earned, selectedMonth) {
+  const canvas = document.getElementById('revenue-chart');
+  if(!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth || canvas.parentElement.offsetWidth;
+  const h = 80;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const max = Math.max(...earned, 1);
+  const barW = Math.floor((w - 32) / months.length) - 6;
+  const gap = 6;
+  const startX = 16;
+  const bottomY = h - 20;
+  const maxBarH = bottomY - 6;
+
+  ctx.clearRect(0, 0, w, h);
+
+  months.forEach((m, i) => {
+    const x = startX + i * (barW + gap);
+    const barH = Math.max(3, Math.round((earned[i] / max) * maxBarH));
+    const y = bottomY - barH;
+    const isSelected = m === selectedMonth;
+    ctx.fillStyle = isSelected ? '#2d4a3e' : 'rgba(122,158,142,0.35)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, barH, 3);
+    ctx.fill();
+
+    // Month label
+    ctx.fillStyle = isSelected ? '#2d4a3e' : '#b5b0a8';
+    ctx.font = `${isSelected?'600':'400'} 10px Inter, sans-serif`;
+    ctx.textAlign = 'center';
+    const label = m.slice(5) + '月';
+    ctx.fillText(label, x + barW/2, h - 4);
+
+    // Amount label above bar (only if has value)
+    if(earned[i] > 0) {
+      ctx.fillStyle = isSelected ? '#2d4a3e' : '#7a7670';
+      ctx.font = '9px DM Mono, monospace';
+      const amtLabel = earned[i] >= 10000 ? (earned[i]/1000).toFixed(0)+'k' : earned[i].toLocaleString();
+      ctx.fillText(amtLabel, x + barW/2, y - 2);
+    }
+  });
+  chartMonths = months;
+}
+
+canvas_click_handler = function(e) {
+  const canvas = document.getElementById('revenue-chart'); if(!canvas||!chartMonths.length) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const w = canvas.offsetWidth;
+  const barW = Math.floor((w - 32) / chartMonths.length) - 6;
+  const gap = 6;
+  const startX = 16;
+  chartMonths.forEach((m, i) => {
+    const bx = startX + i * (barW + gap);
+    if(x >= bx && x <= bx + barW) { selectMonth(m); }
+  });
+};
+
+// ── Monthly Revenue ──
+let selectedMonth=null;
+function getAvailableMonths() {
+  const months=new Set();
+  data.schedules.filter(s=>s.recorded&&s.checkedIn).forEach(s=>months.add(s.date.slice(0,7)));
+  data.students.forEach(s=>s.payments.forEach(p=>months.add(p.date.slice(0,7))));
+  return [...months].sort().reverse();
+}
+
+function renderPayments() {
+  const months=getAvailableMonths();
+  const currentYear = new Date().getFullYear().toString();
+
+  // YTD stats
+  const ytdMonths = [...new Set([
+    ...data.schedules.filter(s=>s.recorded&&s.checkedIn&&s.date.startsWith(currentYear)).map(s=>s.date.slice(0,7)),
+    ...data.students.flatMap(s=>s.payments.filter(p=>p.date.startsWith(currentYear)).map(()=>'')).filter(Boolean)
+  ])];
+  let ytdLessons=0, ytdEarned=0;
+  data.schedules.filter(s=>s.recorded&&s.checkedIn&&s.date.startsWith(currentYear)).forEach(slot=>{
+    ytdLessons++;
+    const student=data.students.find(s=>s.id===slot.studentId); if(!student) return;
+    const totalPaid=student.payments.reduce((sum,p)=>sum+(p.amount||0),0);
+    const totalBought=student.payments.reduce((sum,p)=>sum+p.sessions,0);
+    ytdEarned += totalBought ? Math.round(totalPaid/totalBought) : 0;
+  });
+  const activeMonthsCount = new Set(data.schedules.filter(s=>s.recorded&&s.checkedIn&&s.date.startsWith(currentYear)).map(s=>s.date.slice(0,7))).size;
+  const monthAvg = activeMonthsCount ? Math.round(ytdEarned/activeMonthsCount) : 0;
+
+  const ytdExpense = (data.expenses||[]).filter(e=>e.date.startsWith(currentYear)).reduce((sum,e)=>sum+(e.amount||0),0);
+  const ytdNet = ytdEarned - ytdExpense;
+
+  document.getElementById('ytd-strip').innerHTML = `
+    <div class="ytd-strip" style="margin-bottom:12px">
+      <div class="ytd-box"><div class="ytd-val">${ytdLessons}</div><div class="ytd-label">本年堂數</div></div>
+      <div class="ytd-box"><div class="ytd-val" style="color:var(--accent2)">$${ytdEarned.toLocaleString()}</div><div class="ytd-label">本年收入</div></div>
+      <div class="ytd-box"><div class="ytd-val" style="color:var(--danger)">$${ytdExpense.toLocaleString()}</div><div class="ytd-label">本年支出</div></div>
+    </div>
+    <div class="net-profit-row ${ytdNet>=0?'positive':'negative'}" style="margin-bottom:14px">
+      <span class="net-profit-label">本年淨利</span>
+      <span class="net-profit-val" style="color:${ytdNet>=0?'var(--accent)':'var(--danger)'}">
+        ${ytdNet>=0?'':'-'}$${Math.abs(ytdNet).toLocaleString()}
+      </span>
+    </div>`;
+
+  // 6-month chart
+  const last6 = getLast6Months();
+  const earned6 = last6.map(m=>getMonthEarned(m));
+  const chartWrap = document.getElementById('chart-wrap');
+  if(earned6.some(v=>v>0)) {
+    chartWrap.style.display='block';
+    const canvas = document.getElementById('revenue-chart');
+    canvas.onclick = canvas_click_handler;
+    setTimeout(()=>drawRevenueChart(last6, earned6, selectedMonth||months[0]), 50);
+  } else {
+    chartWrap.style.display='none';
+  }
+
+  if(!months.length) {
+    document.getElementById('month-tabs').innerHTML='';
+    document.getElementById('monthly-stats').innerHTML='<div class="no-data"><div class="icon">📊</div><div>尚無資料，先完成上課記錄</div></div>';
+    document.getElementById('payment-list-all').innerHTML=''; return;
+  }
+  if(!selectedMonth||!months.includes(selectedMonth)) selectedMonth=months[0];
+  document.getElementById('month-tabs').innerHTML=months.map(m=>
+    `<button class="month-tab ${m===selectedMonth?'active':''}" onclick="selectMonth('${m}')">${m.replace('-','年')}月</button>`
+  ).join('');
+  renderMonthStats(selectedMonth);
+  renderAllPayments();
+}
+
+function selectMonth(m) {
+  selectedMonth=m;
+  document.querySelectorAll('.month-tab').forEach(el=>el.classList.toggle('active',el.textContent===m.replace('-','年')+'月'));
+  renderMonthStats(m);
+  // Redraw chart with new selection
+  const last6 = getLast6Months();
+  const earned6 = last6.map(mo=>getMonthEarned(mo));
+  if(earned6.some(v=>v>0)) drawRevenueChart(last6, earned6, m);
+}
+
+function renderMonthStats(month) {
+  const lessonsThisMonth=data.schedules.filter(s=>s.recorded&&s.checkedIn&&s.date.slice(0,7)===month);
+  const lessonCount=lessonsThisMonth.length;
+  let earnedRevenue=0;
+  const studentBreakdown={};
+  lessonsThisMonth.forEach(slot=>{
+    const student=data.students.find(s=>s.id===slot.studentId); if(!student) return;
+    const totalPaid=student.payments.reduce((sum,p)=>sum+(p.amount||0),0);
+    const totalBought=student.payments.reduce((sum,p)=>sum+p.sessions,0);
+    const perSession=totalBought?Math.round(totalPaid/totalBought):0;
+    earnedRevenue+=perSession;
+    if(!studentBreakdown[student.id]) studentBreakdown[student.id]={name:student.name,count:0,revenue:0,perSession};
+    studentBreakdown[student.id].count++;
+    studentBreakdown[student.id].revenue+=perSession;
+  });
+  let receivedRevenue=0;
+  data.students.forEach(s=>s.payments.forEach(p=>{ if(p.date.slice(0,7)===month) receivedRevenue+=(p.amount||0); }));
+
+  // Expenses this month
+  const monthExpenses = (data.expenses||[]).filter(e=>e.date.slice(0,7)===month);
+  const totalExpense = monthExpenses.reduce((sum,e)=>sum+(e.amount||0),0);
+  const netProfit = earnedRevenue - totalExpense;
+
+  const breakdown=Object.values(studentBreakdown).sort((a,b)=>b.count-a.count);
+  document.getElementById('monthly-stats').innerHTML=`
+    <div class="monthly-grid">
+      <div class="stat-box"><div class="stat-value">${lessonCount}</div><div class="stat-label">完成堂數</div></div>
+      <div class="stat-box"><div class="stat-value" style="color:var(--accent2)">$${earnedRevenue.toLocaleString()}</div><div class="stat-label">課堂收入</div></div>
+      <div class="stat-box"><div class="stat-value" style="color:var(--warning)">$${receivedRevenue.toLocaleString()}</div><div class="stat-label">收款金額</div></div>
+    </div>
+    ${breakdown.length?`
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">學生明細</div>
+      <div class="monthly-breakdown">${breakdown.map(b=>`
+        <div class="breakdown-row">
+          <span>${b.name}</span>
+          <span style="display:flex;gap:12px;align-items:center">
+            <span style="color:var(--text2);font-size:12px">${b.count} 堂</span>
+            <span style="color:var(--text3);font-size:11px">$${b.perSession.toLocaleString()}/堂</span>
+            <span class="breakdown-val">$${b.revenue.toLocaleString()}</span>
+          </span>
+        </div>`).join('')}
+      </div>`:''}
+    <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:12px;color:var(--text2);font-weight:600">支出明細</div>
+      <button onclick="openExpenseModal('${month}')" style="background:none;border:none;font-size:11px;color:var(--accent2);cursor:pointer;font-family:inherit">＋ 新增</button>
+    </div>
+    ${monthExpenses.length ? `<div class="monthly-breakdown">
+      ${monthExpenses.map(e=>`
+        <div class="expense-item">
+          <div>
+            <span class="expense-cat">${EXPENSE_CAT_LABELS[e.cat]||e.cat}</span>
+            ${e.note?`<span style="font-size:12px;color:var(--text2);margin-left:6px">${e.note}</span>`:''}
+            <div class="payment-date">${e.date}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="expense-amount">-$${e.amount.toLocaleString()}</span>
+            <button onclick="deleteExpense('${e.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px">×</button>
+          </div>
+        </div>`).join('')}
+    </div>` : `<div style="font-size:12px;color:var(--text3);padding:6px 0">本月無支出記錄</div>`}
+    <div class="net-profit-row ${netProfit>=0?'positive':'negative'}">
+      <span class="net-profit-label">本月淨利（收入 − 支出）</span>
+      <span class="net-profit-val" style="color:${netProfit>=0?'var(--accent)':'var(--danger)'}">
+        ${netProfit>=0?'':'-'}$${Math.abs(netProfit).toLocaleString()}
+      </span>
+    </div>`;
+}
+
+function renderAllPayments() {
+  const all=[];
+  data.students.forEach(s=>s.payments.forEach(p=>{
+    const ps=p.sessions&&p.amount?Math.round(p.amount/p.sessions):0;
+    all.push({...p,studentName:s.name,ps});
+  }));
+  all.sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('payment-list-all').innerHTML=!all.length
+    ?'<div class="no-data"><div class="icon">💳</div><div>尚無付款記錄</div></div>'
+    :all.map(p=>`<div class="payment-item"><div><div style="font-weight:500">${p.studentName}</div><div class="payment-date">${p.date}　${p.sessions} 堂${p.ps?`　·　$${p.ps.toLocaleString()}/堂`:''}</div></div><div class="payment-amount">$${(p.amount||0).toLocaleString()}</div></div>`).join('');
+}
+
+// ── Check-in ──
+function deleteScheduleSlot(slotId) {
+  const slot = data.schedules.find(s=>s.id===slotId); if(!slot) return;
+  const msg = slot.recorded ? '學生取消課程？此堂記錄將刪除，堂數退回。' : '確定刪除此課程？';
+  appConfirm(msg, () => {
+    if(slot.sessionDeducted) {
+      const student = data.students.find(s=>s.id===slot.studentId);
+      if(student) { student.remainingSessions++; student.completedSessions=Math.max(0,(student.completedSessions||1)-1); }
+    }
+    data.schedules = data.schedules.filter(s=>s.id!==slotId);
+    save(); renderSchedule();
+  });
+}
+function handleCheckinBtn(slotId, isCheckedIn) {
+  if(isCheckedIn) appConfirm('確定取消此學生的簽到？', ()=>toggleCheckin(slotId));
+  else toggleCheckin(slotId);
+}
+function toggleCheckin(slotId) {
+  const slot = data.schedules.find(s=>s.id===slotId); if(!slot) return;
+  slot.checkedIn = !slot.checkedIn;
+  if(slot.checkedIn) slot.checkinTime = new Date().toISOString();
+  else delete slot.checkinTime;
+  save(); renderSchedule();
+}
+
+let currentQRSlotId = null;
+function showQR(slotId) {
+  const slot = data.schedules.find(s=>s.id===slotId); if(!slot) return;
+  const student = data.students.find(s=>s.id===slot.studentId); if(!student) return;
+  currentQRSlotId = slotId;
+  const url = location.href.split('#')[0] + '#checkin/' + slotId;
+  document.getElementById('qr-title').textContent = student.name + ' — ' + slot.date + ' ' + slot.time;
+  document.getElementById('qr-link-text').textContent = url;
+  document.getElementById('qr-link-text').href = url;
+  drawQRCode('qr-canvas', url);
+  openModal('modal-qr');
+}
+
+function drawQRCode(canvasId, text) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const size = 200;
+  canvas.width = canvas.height = size;
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,size,size);
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  script.onload = () => {
+    const tmp = document.createElement('div'); tmp.style.display='none'; document.body.appendChild(tmp);
+    new QRCode(tmp, {text,width:200,height:200,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+    setTimeout(()=>{
+      const img = tmp.querySelector('img')||tmp.querySelector('canvas');
+      if(img) { ctx.clearRect(0,0,size,size); ctx.drawImage(img,0,0,size,size); }
+      document.body.removeChild(tmp);
+    }, 200);
+  };
+  script.onerror = () => {
+    ctx.fillStyle='#1a1a1a'; ctx.fillRect(0,0,size,size);
+    ctx.fillStyle='#c8f55a'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('請複製下方連結', size/2, 90);
+    ctx.fillStyle='#888'; ctx.font='11px sans-serif';
+    ctx.fillText('傳送給學生簽到', size/2, 115);
+  };
+  if(!window.QRCode) document.head.appendChild(script);
+  else script.onload();
+}
+
+function copyCheckinLink() {
+  const link = document.getElementById('qr-link-text').textContent;
+  navigator.clipboard?.writeText(link).then(()=>alert('連結已複製！')).catch(()=>{ prompt('請手動複製此連結：', link); });
+}
+
+// ── URL Hash Check-in ──
+function handleHashCheckin() {
+  const hash = location.hash;
+  if(!hash.startsWith('#checkin/')) return false;
+  const slotId = hash.slice(9);
+  const slot = data.schedules.find(s=>s.id===slotId);
+  if(!slot) { showCheckinPage('找不到課程，請聯絡教練', false); return true; }
+  const student = data.students.find(s=>s.id===slot.studentId);
+  const name = student?.name || '學生';
+  if(slot.checkedIn) { showCheckinPage(`${name}，你已經簽到了！\n${slot.date} ${slot.time}`, true); return true; }
+  slot.checkedIn = true; slot.checkinTime = new Date().toISOString(); save();
+  showCheckinPage(`簽到成功！\n${name}\n${slot.date} ${slot.time}`, true);
+  return true;
+}
+
+function showCheckinPage(msg, success) {
+  document.body.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f0f0f;font-family:'Noto Sans TC',sans-serif;padding:20px;">
+      <div style="text-align:center;padding:40px 32px;background:#1a1a1a;border-radius:20px;border:2px solid ${success?'#c8f55a':'#f55a5a'};max-width:320px;width:100%">
+        <div style="font-size:56px;margin-bottom:16px">${success?'✅':'❌'}</div>
+        <div style="font-size:18px;font-weight:700;color:${success?'#c8f55a':'#f55a5a'};white-space:pre-line;line-height:1.8">${msg}</div>
+        <div style="margin-top:20px;font-size:13px;color:#888">可以關閉此頁面</div>
+      </div>
+    </div>`;
+}
+
+// ── Colour picker init ──
+function initColorPicker() {
+  const row = document.getElementById('color-picker'); if(!row) return;
+  const colors = {green:'#c8f55a',yellow:'#f5c85a',blue:'#7ab0ff',purple:'#c07aff',orange:'#ffa03c',pink:'#ff7ac8',red:'#f55a5a',cyan:'#5af5c8'};
+  let selected = 'green';
+  row.innerHTML = Object.entries(colors).map(([k,v])=>
+    `<div class="color-swatch${k===selected?' selected':''}" style="background:${v}" data-color="${k}" onclick="selectColor('${k}')"></div>`
+  ).join('');
+}
+function selectColor(color) {
+  document.getElementById('new-cat-color').value = color;
+  document.querySelectorAll('.color-swatch').forEach(el=>el.classList.toggle('selected', el.dataset.color===color));
+}
+initColorPicker();
+
+if(!handleHashCheckin()) renderSchedule();
+</script>
+</body>
+</html>
