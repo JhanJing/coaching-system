@@ -38,25 +38,49 @@
 
   /* ── Bottom Nav (mobile) ── */
   nav.bottom-nav { display:none; }
+
+  /* ── 漢堡選單按鈕（預設隱藏，手機才顯示） ── */
+  .hamburger-btn {
+    display:none; background:none; border:none; cursor:pointer;
+    font-size:22px; color:var(--text2); padding:6px 8px; border-radius:7px;
+    line-height:1; -webkit-tap-highlight-color:transparent; transition:all 0.15s;
+  }
+  .hamburger-btn:hover { color:var(--text); background:var(--surface2); }
+
+  /* ── 手機側邊選單 ── */
+  .mobile-menu {
+    display:none; position:fixed; inset:0; z-index:300;
+  }
+  .mobile-menu.open { display:block; }
+  .mobile-menu-backdrop {
+    position:absolute; inset:0;
+    background:rgba(26,26,24,0.45); backdrop-filter:blur(4px);
+  }
+  .mobile-menu-panel {
+    position:absolute; top:0; right:0; bottom:0; width:210px;
+    background:var(--surface); border-left:1px solid var(--border);
+    display:flex; flex-direction:column;
+    padding-top:max(56px, calc(44px + env(safe-area-inset-top)));
+    padding-bottom:max(24px, env(safe-area-inset-bottom));
+    box-shadow:-8px 0 32px rgba(0,0,0,0.14);
+    transform:translateX(100%); transition:transform 0.26s cubic-bezier(0.32,0.72,0,1);
+  }
+  .mobile-menu.open .mobile-menu-panel { transform:translateX(0); }
+  .mobile-menu-item {
+    background:none; border:none; cursor:pointer; font-family:inherit;
+    display:flex; align-items:center; gap:12px; padding:14px 22px;
+    color:var(--text2); font-size:14px; font-weight:500;
+    transition:all 0.15s; text-align:left; width:100%;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mobile-menu-item:hover { background:var(--surface2); color:var(--text); }
+  .mobile-menu-item.active { color:var(--accent); background:rgba(45,74,62,0.07); font-weight:600; }
+  .mobile-menu-item .menu-icon { font-size:18px; width:24px; text-align:center; }
+  .mobile-menu-divider { border:none; border-top:1px solid var(--border); margin:8px 0; }
+
   @media(max-width:600px) {
     nav.top-nav { display:none; }
-    nav.bottom-nav {
-      display:flex; position:fixed; bottom:0; left:0; right:0; z-index:200;
-      background:var(--surface); border-top:1px solid var(--border);
-      padding-bottom: env(safe-area-inset-bottom);
-      height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
-    }
-    nav.bottom-nav button {
-      flex:1; background:none; border:none; cursor:pointer; font-family:inherit;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:3px; padding:8px 4px; color:var(--text3); transition:color 0.15s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    nav.bottom-nav button.active { color:var(--accent); }
-    nav.bottom-nav button .bnav-icon { font-size:20px; line-height:1; }
-    nav.bottom-nav button .bnav-label { font-size:10px; font-weight:500; letter-spacing:0.02em; }
-    .main { padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 16px); }
-    .fab { bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + 16px); }
+    .hamburger-btn { display:flex; align-items:center; justify-content:center; }
   }
 
   .main { flex:1; padding:24px 20px; max-width:860px; margin:0 auto; width:100%; }
@@ -414,10 +438,84 @@
     .modal { padding:20px 16px; padding-bottom:max(28px,env(safe-area-inset-bottom)); }
     .set-row { grid-template-columns:12px 1fr 1fr 1fr auto; }
   }
+
+  /* ── 載入中畫面 ── */
+  .app-loading {
+    position:fixed; inset:0; background:var(--bg); z-index:1000;
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+  }
+  .spinner {
+    width:36px; height:36px; border:3px solid var(--border);
+    border-top-color:var(--accent); border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ── 登入畫面 ── */
+  .login-screen {
+    position:fixed; inset:0; background:var(--bg); z-index:999;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:20px;
+    padding:44px 32px; max-width:340px; width:100%; text-align:center;
+    box-shadow:0 8px 40px rgba(0,0,0,0.07);
+  }
+  .login-logo { font-size:28px; font-weight:700; letter-spacing:-0.02em; margin-bottom:8px; }
+  .login-logo span { color:var(--accent2); }
+  .login-subtitle { font-size:13px; color:var(--text2); margin-bottom:36px; line-height:1.7; }
+  .google-btn {
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%; padding:13px 20px; border-radius:9px;
+    background:#fff; border:1px solid var(--border); cursor:pointer;
+    font-family:inherit; font-size:14px; font-weight:500; color:#3c4043;
+    transition:all 0.15s; box-shadow:0 1px 4px rgba(0,0,0,0.07);
+  }
+  .google-btn:hover { box-shadow:0 3px 12px rgba(0,0,0,0.13); border-color:var(--text3); }
+  .login-note { margin-top:20px; font-size:11px; color:var(--text3); line-height:1.7; }
+
+  /* ── Header 使用者資訊 ── */
+  .header-right { display:flex; align-items:center; gap:8px; }
+  .user-chip {
+    display:none; align-items:center; gap:6px;
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:20px; padding:3px 10px 3px 4px;
+  }
+  .user-chip.visible { display:flex; }
+  .user-avatar { width:24px; height:24px; border-radius:50%; object-fit:cover; background:var(--border); }
+  .user-dname { font-size:12px; font-weight:500; color:var(--text2); max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media(max-width:600px) { .user-dname { display:none; } .user-chip { padding:3px 6px 3px 4px; } }
 </style>
 </head>
 <body>
-<div class="app">
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<!-- 載入中 -->
+<div class="app-loading" id="app-loading">
+  <div class="spinner"></div>
+</div>
+
+<!-- 登入畫面 -->
+<div class="login-screen" id="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">Coach<span>OS</span></div>
+    <div class="login-subtitle">教練工作管理系統<br>請使用 Google 帳號登入</div>
+    <button class="google-btn" onclick="signInWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      使用 Google 帳號登入
+    </button>
+    <div class="login-note">登入後資料安全儲存於 Firebase<br>每個帳號擁有獨立的學生與課程資料</div>
+  </div>
+</div>
+
+<div class="app" style="display:none">
   <header>
     <div class="logo">Coach<span>OS</span></div>
     <nav class="top-nav">
@@ -426,7 +524,38 @@
       <button onclick="showView('payments')">收入</button>
       <button onclick="openCategoryManager()" style="font-size:16px;padding:6px 10px">⚙︎</button>
     </nav>
+    <div class="header-right">
+      <div class="user-chip" id="user-chip">
+        <img class="user-avatar" id="user-avatar" src="" alt="">
+        <span class="user-dname" id="user-dname"></span>
+      </div>
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileMenu()" aria-label="選單">☰</button>
+    </div>
   </header>
+
+  <!-- 手機側邊選單 -->
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-menu-backdrop" onclick="closeMobileMenu()"></div>
+    <div class="mobile-menu-panel">
+      <button class="mobile-menu-item active" id="mmenu-schedule" onclick="showView('schedule');closeMobileMenu()">
+        <span class="menu-icon">📅</span>課表
+      </button>
+      <button class="mobile-menu-item" id="mmenu-students" onclick="showView('students');closeMobileMenu()">
+        <span class="menu-icon">👤</span>學生
+      </button>
+      <button class="mobile-menu-item" id="mmenu-payments" onclick="showView('payments');closeMobileMenu()">
+        <span class="menu-icon">💰</span>收入
+      </button>
+      <hr class="mobile-menu-divider">
+      <button class="mobile-menu-item" onclick="openCategoryManager();closeMobileMenu()">
+        <span class="menu-icon">⚙︎</span>設定
+      </button>
+      <hr class="mobile-menu-divider">
+      <button class="mobile-menu-item" onclick="signOutUser();closeMobileMenu()" style="color:var(--danger)">
+        <span class="menu-icon">🚪</span>登出
+      </button>
+    </div>
+  </div>
 
   <div class="main">
     <div id="view-schedule" class="view active">
@@ -468,21 +597,6 @@
   </div>
 </div>
 
-<!-- Bottom Nav (mobile) -->
-<nav class="bottom-nav">
-  <button onclick="showView('schedule')" id="bnav-schedule" class="active">
-    <span class="bnav-icon">📅</span><span class="bnav-label">課表</span>
-  </button>
-  <button onclick="showView('students')" id="bnav-students">
-    <span class="bnav-icon">👤</span><span class="bnav-label">學生</span>
-  </button>
-  <button onclick="showView('payments')" id="bnav-payments">
-    <span class="bnav-icon">💰</span><span class="bnav-label">收入</span>
-  </button>
-  <button onclick="openCategoryManager()">
-    <span class="bnav-icon">⚙︎</span><span class="bnav-label">設定</span>
-  </button>
-</nav>
 
 <button class="fab" id="fab-btn" onclick="handleFab()">＋</button>
 
@@ -610,7 +724,6 @@
     <div class="btn-group">
       <button class="btn btn-primary" onclick="saveLessonRecord()">儲存記錄</button>
       <button class="btn btn-secondary" onclick="closeModal('modal-lesson-record')">關閉</button>
-      <button class="btn btn-danger btn-sm" id="cancel-record-btn" onclick="cancelLessonRecord()" style="display:none">取消登入</button>
     </div>
   </div>
 </div>
@@ -658,10 +771,89 @@
 </div>
 
 <script>
+// ── Firebase 初始化 ──
+const firebaseConfig = {
+  apiKey: "AIzaSyDn_uorFzZIRmiLLyEqWskn9N7OPuE0ECw",
+  authDomain: "coaching-system-3779a.firebaseapp.com",
+  projectId: "coaching-system-3779a",
+  storageBucket: "coaching-system-3779a.firebasestorage.app",
+  messagingSenderId: "429132571236",
+  appId: "1:429132571236:web:7a67d906a4be4015b5f571"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
 // ── Data ──
-let data = JSON.parse(localStorage.getItem('coachOS_v2')||'null') || {students:[],schedules:[],expenses:[]};
-if(!data.expenses) data.expenses = [];
-function save() { localStorage.setItem('coachOS_v2',JSON.stringify(data)); }
+let data = {students:[], schedules:[], expenses:[]};
+let currentUser = null;
+let saveTimer = null;
+
+function save() {
+  if(!currentUser) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    db.collection('users').doc(currentUser.uid).set(data)
+      .catch(e => console.error('儲存失敗:', e));
+  }, 600);
+}
+
+async function loadUserData() {
+  try {
+    const snap = await db.collection('users').doc(currentUser.uid).get();
+    if(snap.exists) {
+      data = snap.data();
+      if(!data.expenses)  data.expenses  = [];
+      if(!data.students)  data.students  = [];
+      if(!data.schedules) data.schedules = [];
+    } else {
+      data = {students:[], schedules:[], expenses:[]};
+    }
+  } catch(e) {
+    console.error('載入資料失敗:', e);
+    data = {students:[], schedules:[], expenses:[]};
+  }
+  initColorPicker();
+  if(!handleHashCheckin()) showView('schedule');
+}
+
+// ── Google 登入 / 登出 ──
+function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e => alert('登入失敗：' + e.message));
+}
+
+function signOutUser() {
+  if(confirm('確定要登出嗎？')) auth.signOut();
+}
+
+// ── Auth 狀態監聽 ──
+auth.onAuthStateChanged(user => {
+  const loadingEl  = document.getElementById('app-loading');
+  const loginEl    = document.getElementById('login-screen');
+  const appEl      = document.querySelector('.app');
+  const userChip   = document.getElementById('user-chip');
+
+  if(user) {
+    currentUser = user;
+    loadingEl.style.display  = 'none';
+    loginEl.style.display    = 'none';
+    appEl.style.display      = 'flex';
+    // 顯示使用者資訊
+    document.getElementById('user-avatar').src = user.photoURL || '';
+    document.getElementById('user-dname').textContent = user.displayName || user.email;
+    userChip.classList.add('visible');
+    loadUserData();
+  } else {
+    currentUser = null;
+    data = {students:[], schedules:[], expenses:[]};
+    loadingEl.style.display  = 'none';
+    loginEl.style.display    = 'flex';
+    appEl.style.display      = 'none';
+    userChip.classList.remove('visible');
+  }
+});
+
 function genId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function fmtDate(d) { return d.toISOString().slice(0,10); }
 
@@ -670,9 +862,9 @@ let currentView = 'schedule';
 function showView(v) {
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('nav.top-nav button').forEach((el,i)=>el.classList.toggle('active',['schedule','students','payments'][i]===v));
-  // bottom nav
+  // 手機側邊選單 active 狀態
   ['schedule','students','payments'].forEach(name=>{
-    const btn=document.getElementById('bnav-'+name);
+    const btn=document.getElementById('mmenu-'+name);
     if(btn) btn.classList.toggle('active', name===v);
   });
   document.getElementById('view-'+v).classList.add('active');
@@ -684,6 +876,17 @@ function showView(v) {
   const fab = document.getElementById('fab-btn');
   if(fab) fab.textContent = v==='students' ? '＋' : '＋';
 }
+
+// ── 手機選單開關 ──
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  menu.classList.toggle('open');
+}
+function closeMobileMenu() {
+  document.getElementById('mobile-menu').classList.remove('open');
+}
+// 按 ESC 關閉選單
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeMobileMenu(); });
 
 function handleFab() {
   if(currentView==='students') openModal('modal-add-student');
@@ -1118,7 +1321,6 @@ function openLessonModal(slot) {
   const blocks=slot.blocks?.length?slot.blocks:[{type:firstCatId,name:'',sets:[{sets:'',reps:'',weight:''}],exerciseNote:''}];
   blocks.forEach(b=>addBuilderBlock('lesson-builder',b));
   document.getElementById('lesson-notes').value=slot.notes||'';
-  document.getElementById('cancel-record-btn').style.display = slot.recorded ? 'block' : 'none';
   openModal('modal-lesson-record');
 }
 
@@ -1132,7 +1334,6 @@ function cancelLessonRecord() {
       if(student) { student.remainingSessions++; student.completedSessions=Math.max(0,(student.completedSessions||1)-1); }
       slot.sessionDeducted=false;
     }
-    document.getElementById('cancel-record-btn').style.display='none';
     save(); closeModal('modal-lesson-record'); renderSchedule();
   });
 }
@@ -1684,9 +1885,7 @@ function selectColor(color) {
   document.getElementById('new-cat-color').value = color;
   document.querySelectorAll('.color-swatch').forEach(el=>el.classList.toggle('selected', el.dataset.color===color));
 }
-initColorPicker();
-
-if(!handleHashCheckin()) renderSchedule();
+// initColorPicker 與 renderSchedule 在 loadUserData() 登入後才呼叫
 </script>
 </body>
 </html>
