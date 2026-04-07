@@ -485,6 +485,28 @@
   .user-avatar { width:24px; height:24px; border-radius:50%; object-fit:cover; background:var(--border); }
   .user-dname { font-size:12px; font-weight:500; color:var(--text2); max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   @media(max-width:600px) { .user-dname { display:none; } .user-chip { padding:3px 6px 3px 4px; } }
+
+  /* ── Desktop logout btn ── */
+  .logout-btn-desktop {
+    display:none; background:none; border:1px solid var(--border); border-radius:7px;
+    color:var(--danger); font-size:12px; font-weight:500; padding:5px 10px;
+    cursor:pointer; font-family:inherit; transition:all 0.15s; white-space:nowrap;
+  }
+  .logout-btn-desktop:hover { background:rgba(192,57,43,0.07); border-color:var(--danger); }
+  @media(min-width:601px) { .logout-btn-desktop { display:inline-flex; align-items:center; gap:5px; } }
+
+  /* ── Training History View ── */
+  .history-filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+  .history-filter-bar select { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--text); font-size:13px; font-family:inherit; outline:none; cursor:pointer; }
+  .history-count { font-size:12px; color:var(--text3); margin-left:auto; }
+  .history-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+  .history-card-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .history-card-date { font-size:13px; font-weight:600; color:var(--text); }
+  .history-card-student { font-size:12px; color:var(--accent); background:rgba(45,74,62,0.08); border-radius:5px; padding:2px 8px; font-weight:500; }
+  .history-card-time { font-size:12px; color:var(--text3); }
+  .history-card-notes { font-size:12px; color:var(--text2); margin-top:6px; font-style:italic; padding-top:6px; border-top:1px solid var(--border); }
+  .no-history { text-align:center; padding:60px 20px; color:var(--text3); }
+  .no-history .icon { font-size:40px; margin-bottom:12px; }
 </style>
 </head>
 <body>
@@ -522,6 +544,7 @@
       <button class="active" onclick="showView('schedule')">課表</button>
       <button onclick="showView('students')">學生</button>
       <button onclick="showView('payments')">收入</button>
+      <button onclick="showView('history')">訓練記錄</button>
       <button onclick="openCategoryManager()" style="font-size:16px;padding:6px 10px">⚙︎</button>
     </nav>
     <div class="header-right">
@@ -529,6 +552,7 @@
         <img class="user-avatar" id="user-avatar" src="" alt="">
         <span class="user-dname" id="user-dname"></span>
       </div>
+      <button class="logout-btn-desktop" onclick="signOutUser()" title="登出">⏏ 登出</button>
       <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileMenu()" aria-label="選單">☰</button>
     </div>
   </header>
@@ -545,6 +569,9 @@
       </button>
       <button class="mobile-menu-item" id="mmenu-payments" onclick="showView('payments');closeMobileMenu()">
         <span class="menu-icon">💰</span>收入
+      </button>
+      <button class="mobile-menu-item" id="mmenu-history" onclick="showView('history');closeMobileMenu()">
+        <span class="menu-icon">📋</span>訓練記錄
       </button>
       <hr class="mobile-menu-divider">
       <button class="mobile-menu-item" onclick="openCategoryManager();closeMobileMenu()">
@@ -576,6 +603,17 @@
       <div class="section-title">學生管理</div>
       <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="student-search" placeholder="搜尋學生姓名..." oninput="renderStudents()"></div>
       <div class="student-grid" id="student-grid"></div>
+    </div>
+
+    <div id="view-history" class="view">
+      <div class="section-title">訓練記錄</div>
+      <div class="history-filter-bar">
+        <select id="history-filter-student" onchange="renderHistory()">
+          <option value="">全部學生</option>
+        </select>
+        <span class="history-count" id="history-count"></span>
+      </div>
+      <div id="history-list"></div>
     </div>
 
     <div id="view-payments" class="view">
@@ -861,9 +899,9 @@ function fmtDate(d) { return d.toISOString().slice(0,10); }
 let currentView = 'schedule';
 function showView(v) {
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('nav.top-nav button').forEach((el,i)=>el.classList.toggle('active',['schedule','students','payments'][i]===v));
+  document.querySelectorAll('nav.top-nav button').forEach((el,i)=>el.classList.toggle('active',['schedule','students','payments','history'][i]===v));
   // 手機側邊選單 active 狀態
-  ['schedule','students','payments'].forEach(name=>{
+  ['schedule','students','payments','history'].forEach(name=>{
     const btn=document.getElementById('mmenu-'+name);
     if(btn) btn.classList.toggle('active', name===v);
   });
@@ -872,6 +910,7 @@ function showView(v) {
   if(v==='schedule') renderSchedule();
   if(v==='students') renderStudents();
   if(v==='payments') renderPayments();
+  if(v==='history') renderHistory();
   // Update FAB label
   const fab = document.getElementById('fab-btn');
   if(fab) fab.textContent = v==='students' ? '＋' : '＋';
@@ -1620,6 +1659,42 @@ function getAvailableMonths() {
   data.schedules.filter(s=>s.recorded&&s.checkedIn).forEach(s=>months.add(s.date.slice(0,7)));
   data.students.forEach(s=>s.payments.forEach(p=>months.add(p.date.slice(0,7))));
   return [...months].sort().reverse();
+}
+
+function renderHistory() {
+  // 更新學生篩選下拉
+  const sel = document.getElementById('history-filter-student');
+  const prevVal = sel.value;
+  sel.innerHTML = '<option value="">全部學生</option>' +
+    data.students.map(s=>`<option value="${s.id}"${s.id===prevVal?' selected':''}>${s.name}</option>`).join('');
+
+  const filterStudentId = sel.value;
+  const recorded = data.schedules
+    .filter(s => s.recorded && (!filterStudentId || s.studentId === filterStudentId))
+    .sort((a,b) => (b.date+'T'+b.time).localeCompare(a.date+'T'+a.time));
+
+  document.getElementById('history-count').textContent = `共 ${recorded.length} 堂`;
+
+  const list = document.getElementById('history-list');
+  if(!recorded.length) {
+    list.innerHTML = `<div class="no-history"><div class="icon">📋</div><div>${filterStudentId?'此學生尚無訓練記錄':'尚無任何訓練記錄'}</div></div>`;
+    return;
+  }
+
+  list.innerHTML = recorded.map(slot => {
+    const student = data.students.find(s=>s.id===slot.studentId);
+    const name = student ? student.name : '未知學生';
+    const notesHtml = slot.notes ? `<div class="history-card-notes">${slot.notes}</div>` : '';
+    return `<div class="history-card">
+      <div class="history-card-header">
+        <span class="history-card-date">${slot.date}</span>
+        <span class="history-card-time">${slot.time}</span>
+        <span class="history-card-student">${name}</span>
+      </div>
+      ${renderBlocksDisplay(slot.blocks)}
+      ${notesHtml}
+    </div>`;
+  }).join('');
 }
 
 function renderPayments() {
