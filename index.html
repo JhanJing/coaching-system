@@ -32,7 +32,7 @@
   .logo { font-size:15px; font-weight:600; letter-spacing:-0.01em; color:var(--text); }
   .logo span { color:var(--accent2); }
   nav.top-nav { display:flex; gap:2px; }
-  nav.top-nav button { background:none; border:none; color:var(--text2); padding:7px 14px; border-radius:6px; cursor:pointer; font-size:13px; font-family:inherit; font-weight:500; transition:all 0.15s; }
+  nav.top-nav button { background:none; border:none; color:var(--text2); padding:7px 14px; border-radius:6px; cursor:pointer; font-size:13px; font-family:inherit; font-weight:500; transition:color 0.15s, background 0.15s; }
   nav.top-nav button:hover { color:var(--text); background:var(--surface2); }
   nav.top-nav button.active { color:var(--accent); background:rgba(45,74,62,0.08); }
 
@@ -54,7 +54,7 @@
   .mobile-menu.open { display:block; }
   .mobile-menu-backdrop {
     position:absolute; inset:0;
-    background:rgba(26,26,24,0.45); backdrop-filter:blur(4px);
+    background:rgba(26,26,24,0.45);
   }
   .mobile-menu-panel {
     position:absolute; top:0; right:0; bottom:0; width:210px;
@@ -104,7 +104,7 @@
   .student-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; }
   .student-card {
     background:var(--surface); border:1px solid var(--border); border-radius:10px;
-    padding:16px; cursor:pointer; transition:all 0.18s;
+    padding:16px; cursor:pointer; transition:border-color 0.15s, box-shadow 0.15s, transform 0.15s;
   }
   .student-card:hover {
     border-color:var(--accent2);
@@ -152,12 +152,12 @@
   /* ── Modal animations ── */
   .modal-overlay {
     display:flex; position:fixed; inset:0;
-    background:rgba(26,26,24,0); backdrop-filter:blur(0px);
+    background:rgba(26,26,24,0);
     z-index:200; align-items:flex-end; justify-content:center; padding:0;
-    pointer-events:none; transition:background 0.25s ease, backdrop-filter 0.25s ease;
+    pointer-events:none; transition:background 0.2s ease;
   }
   .modal-overlay.open {
-    background:rgba(26,26,24,0.4); backdrop-filter:blur(4px);
+    background:rgba(26,26,24,0.45);
     pointer-events:all;
   }
   .modal {
@@ -165,9 +165,10 @@
     border-radius:16px 16px 0 0; padding:24px 24px;
     padding-bottom: max(36px, env(safe-area-inset-bottom));
     width:100%; max-width:540px; max-height:92vh; overflow-y:auto;
-    box-shadow:0 -8px 40px rgba(0,0,0,0.12);
-    transform:translateY(48px); opacity:0;
-    transition:transform 0.28s cubic-bezier(0.32,0.72,0,1), opacity 0.2s ease;
+    box-shadow:0 -4px 24px rgba(0,0,0,0.1);
+    transform:translateY(32px); opacity:0;
+    transition:transform 0.22s cubic-bezier(0.32,0.72,0,1), opacity 0.18s ease;
+    will-change:transform;
   }
   .modal-overlay.open .modal { transform:translateY(0); opacity:1; }
   .modal-title { font-size:14px; font-weight:600; letter-spacing:-0.01em; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; }
@@ -290,13 +291,35 @@
   .exercise-note-display { font-size:10px; color:var(--text3); font-style:italic; }
   .notes-display { font-size:11px; color:var(--text3); font-style:italic; padding:3px 0; }
 
-  /* ── Last lesson ── */
-  .last-lesson-panel { border:1px solid var(--border); border-radius:8px; margin-bottom:16px; overflow:hidden; }
-  .last-lesson-toggle { width:100%; background:var(--surface2); border:none; color:var(--text2); padding:8px 12px; text-align:left; cursor:pointer; font-family:inherit; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; display:flex; justify-content:space-between; align-items:center; }
-  .last-lesson-toggle:hover { color:var(--accent); }
-  .last-lesson-arrow { font-size:9px; transition:transform 0.2s; }
-  .last-lesson-body { display:none; padding:10px 12px; background:var(--surface); border-top:1px solid var(--border); }
-  .last-lesson-body.open { display:block; }
+  /* ── Past Training Reference Panel ── */
+  .past-ref-panel { border:1px solid var(--border); border-radius:8px; margin-bottom:14px; overflow:hidden; }
+  .past-ref-toggle { width:100%; background:var(--surface2); border:none; padding:9px 14px; display:flex; align-items:center; gap:6px; cursor:pointer; font-family:inherit; font-size:12px; color:var(--accent); font-weight:600; }
+  .past-ref-toggle:hover { background:var(--surface3); }
+  .past-ref-toggle-arrow { margin-left:auto; font-size:11px; color:var(--text3); }
+  .past-ref-body { display:none; background:var(--surface); border-top:1px solid var(--border); max-height:300px; overflow-y:auto; }
+  .past-ref-body.open { display:block; }
+  /* 每一筆課程 */
+  .past-ref-session { border-bottom:1px solid var(--border); }
+  .past-ref-session:last-child { border-bottom:none; }
+  .past-ref-session-header { padding:8px 14px; display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; background:var(--surface); }
+  .past-ref-session-header:hover { background:var(--surface2); }
+  .past-ref-session-date { font-family:'DM Mono',monospace; font-size:11px; font-weight:600; color:var(--text); min-width:84px; }
+  .past-ref-session-meta { font-size:11px; color:var(--text3); }
+  .past-ref-session-actions { margin-left:auto; display:flex; align-items:center; gap:6px; }
+  .past-ref-copy-all-btn { font-size:11px; color:var(--accent); background:rgba(45,74,62,0.07); border:none; border-radius:5px; padding:3px 9px; cursor:pointer; font-family:inherit; font-weight:600; white-space:nowrap; }
+  .past-ref-copy-all-btn:hover { background:rgba(45,74,62,0.14); }
+  .past-ref-toggle-arrow-sm { font-size:10px; color:var(--text3); }
+  /* 動作列表 */
+  .past-ref-blocks { display:none; padding:6px 14px 10px; background:var(--surface2); border-top:1px solid var(--border); }
+  .past-ref-blocks.open { display:block; }
+  .past-ref-block { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); }
+  .past-ref-block:last-child { border-bottom:none; }
+  .past-ref-block-name { font-size:12px; font-weight:600; color:var(--text); min-width:0; flex:1; }
+  .past-ref-block-sets { font-size:11px; color:var(--text3); font-family:'DM Mono',monospace; margin-right:auto; }
+  .past-ref-copy-btn { background:none; border:1px solid var(--border); border-radius:4px; color:var(--text2); font-size:10px; padding:2px 7px; cursor:pointer; white-space:nowrap; font-family:inherit; flex-shrink:0; }
+  .past-ref-copy-btn:hover { border-color:var(--accent2); color:var(--accent); background:rgba(45,74,62,0.06); }
+  .past-ref-session-note { font-size:11px; color:var(--text2); font-style:italic; padding:4px 0 2px; }
+  .past-ref-empty { font-size:12px; color:var(--text3); padding:8px 0; text-align:center; }
 
   /* ── Payments ── */
   .payment-item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; }
@@ -495,6 +518,20 @@
   .logout-btn-desktop:hover { background:rgba(192,57,43,0.07); border-color:var(--danger); }
   @media(min-width:601px) { .logout-btn-desktop { display:inline-flex; align-items:center; gap:5px; } }
 
+  /* ── Measurements ── */
+  .measure-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:8px; }
+  .measure-table th { text-align:left; color:var(--text3); font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; padding:4px 6px 6px; border-bottom:1px solid var(--border); }
+  .measure-table td { padding:8px 6px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
+  .measure-table tr:last-child td { border-bottom:none; }
+  .measure-table td:first-child { font-family:'DM Mono',monospace; font-size:11px; color:var(--text3); white-space:nowrap; }
+  .measure-val { font-family:'DM Mono',monospace; font-weight:500; color:var(--accent); }
+  .measure-delta { font-size:10px; margin-left:4px; }
+  .measure-delta.up { color:var(--danger); }
+  .measure-delta.down { color:var(--accent2); }
+  .measure-note-cell { font-size:11px; color:var(--text2); font-style:italic; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .measure-del-btn { background:none; border:none; color:var(--text3); cursor:pointer; font-size:13px; padding:0 4px; }
+  .measure-del-btn:hover { color:var(--danger); }
+
   /* ── Training History View ── */
   .history-filter-bar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
   .history-filter-bar select { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--text); font-size:13px; font-family:inherit; outline:none; cursor:pointer; }
@@ -601,7 +638,7 @@
 
     <div id="view-students" class="view">
       <div class="section-title">學生管理</div>
-      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="student-search" placeholder="搜尋學生姓名..." oninput="renderStudents()"></div>
+      <div class="search-bar"><span class="search-icon">🔍</span><input type="text" id="student-search" placeholder="搜尋學生姓名..." oninput="renderStudentsDebounced()"></div>
       <div class="student-grid" id="student-grid"></div>
     </div>
 
@@ -712,7 +749,7 @@
 <div class="modal-overlay" id="modal-add-schedule">
   <div class="modal">
     <div class="modal-title">新增課程 <button class="modal-close" onclick="closeModal('modal-add-schedule')">×</button></div>
-    <div class="form-group"><label>學生</label><select id="schedule-student"></select></div>
+    <div class="form-group"><label>學生</label><select id="schedule-student" onchange="refreshSchedulePastRef()"></select></div>
     <div class="form-row">
       <div class="form-group"><label>日期</label><input type="date" id="schedule-date"></div>
       <div class="form-group"><label>時間</label><input type="time" id="schedule-time" value="09:00"></div>
@@ -721,6 +758,14 @@
       <label>每週重複次數 <span id="repeat-preview" style="color:var(--accent2);font-family:'DM Mono',monospace;font-weight:600"></span></label>
       <input type="number" id="schedule-repeat" placeholder="留空 = 只排這一堂" min="1" max="104" inputmode="numeric"
         oninput="document.getElementById('repeat-preview').textContent=this.value?'→ 共'+(parseInt(this.value)+1)+'堂':''">
+    </div>
+    <!-- 從過往課表複製 -->
+    <div class="past-ref-panel" id="schedule-past-ref-panel" style="display:none;margin-bottom:14px">
+      <button class="past-ref-toggle" onclick="toggleSchedulePastRef()">
+        <span>📋 從過往課表複製</span>
+        <span id="schedule-past-ref-arrow">▾</span>
+      </button>
+      <div class="past-ref-body" id="schedule-past-ref-body"></div>
     </div>
     <div class="form-group">
       <label>訓練內容（備課）</label>
@@ -746,12 +791,14 @@
 <div class="modal-overlay" id="modal-lesson-record">
   <div class="modal" style="max-width:520px">
     <div class="modal-title"><span id="lesson-record-title">上課記錄</span><button class="modal-close" onclick="closeModal('modal-lesson-record')">×</button></div>
-    <div class="last-lesson-panel" id="last-lesson-panel" style="display:none">
-      <button class="last-lesson-toggle" id="last-lesson-btn" onclick="toggleLastLesson()">
-        <span id="last-lesson-label" style="color:var(--accent2)">上次記錄</span>
-        <span id="last-lesson-arrow" class="last-lesson-arrow">▾</span>
+    <!-- 參考過往訓練面板 -->
+    <div class="past-ref-panel" id="past-ref-panel" style="display:none">
+      <button class="past-ref-toggle" onclick="togglePastRef()">
+        <span>📖 參考過往訓練</span>
+        <span id="past-ref-count" style="font-size:11px;color:var(--text3);font-weight:400"></span>
+        <span class="past-ref-toggle-arrow" id="past-ref-arrow">▾</span>
       </button>
-      <div class="last-lesson-body" id="last-lesson-body"></div>
+      <div class="past-ref-body" id="past-ref-body"></div>
     </div>
     <div class="form-group">
       <label>訓練內容</label>
@@ -804,6 +851,29 @@
     <div class="btn-group">
       <button class="btn btn-primary" onclick="addPayment()">儲存</button>
       <button class="btn btn-secondary" onclick="closeModal('modal-add-payment')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Measurement -->
+<div class="modal-overlay" id="modal-add-measurement">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">記錄測量 <button class="modal-close" onclick="closeModal('modal-add-measurement')">×</button></div>
+    <input type="hidden" id="measure-student-id">
+    <div class="form-group"><label>日期</label><input type="date" id="measure-date"></div>
+    <div class="form-row">
+      <div class="form-group"><label>體重（kg）</label><input type="number" id="measure-weight" placeholder="65.0" step="0.1" inputmode="decimal"></div>
+      <div class="form-group"><label>體脂（%）</label><input type="number" id="measure-bodyfat" placeholder="20.0" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>腰圍（cm）</label><input type="number" id="measure-waist" placeholder="80" step="0.5" inputmode="decimal"></div>
+      <div class="form-group"><label>臀圍（cm）</label><input type="number" id="measure-hip" placeholder="95" step="0.5" inputmode="decimal"></div>
+    </div>
+    <div class="form-group"><label>骨骼肌（kg）</label><input type="number" id="measure-muscle" placeholder="30.0" step="0.1" inputmode="decimal"></div>
+    <div class="form-group"><label>備注</label><input type="text" id="measure-note" placeholder="例：空腹測量、運動後..."></div>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveMeasurement()">儲存</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-measurement')">取消</button>
     </div>
   </div>
 </div>
@@ -891,6 +961,12 @@ auth.onAuthStateChanged(user => {
     userChip.classList.remove('visible');
   }
 });
+
+// ── 防抖工具 ──
+function debounce(fn, ms) {
+  let t; return (...args) => { clearTimeout(t); t = setTimeout(()=>fn(...args), ms); };
+}
+const renderStudentsDebounced = debounce(() => renderStudents(), 120);
 
 function genId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function fmtDate(d) { return d.toISOString().slice(0,10); }
@@ -1153,6 +1229,22 @@ function selectExercise(blockId, name) {
   document.getElementById('hist_'+blockId)?.classList.remove('open');
 }
 
+// ── Toast 通知 ──
+let _toastTimer = null;
+function showCopyToast(msg) {
+  let toast = document.getElementById('copy-toast');
+  if(!toast) {
+    toast = document.createElement('div');
+    toast.id = 'copy-toast';
+    toast.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:999;pointer-events:none;transition:opacity 0.3s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.2)';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { toast.style.opacity = '0'; }, 1800);
+}
+
 // ── Category Manager ──
 function appConfirm(msg, onOk) {
   document.getElementById('confirm-msg').textContent = msg;
@@ -1184,7 +1276,7 @@ function renameCat(id, newLabel) {
 function addCategory() {
   const label = document.getElementById('new-cat-label').value.trim();
   const color = document.getElementById('new-cat-color').value;
-  if(!label) return alert('請輸入分類名稱');
+  if(!label) { showCopyToast('⚠️ 請輸入分類名稱'); return; }
   if(!data.categories) data.categories = [];
   data.categories.push({id: genId(), label, color});
   save(); document.getElementById('new-cat-label').value = ''; renderCategoryManager();
@@ -1310,7 +1402,74 @@ function openAddScheduleModal(studentId=null, date=null) {
   clearBuilder('schedule-builder');
   const firstCat = getCategories()[0];
   addBuilderBlock('schedule-builder',{type:firstCat?.id||'notes',name:'',sets:[{sets:'',reps:'',weight:''}],exerciseNote:''});
+  refreshSchedulePastRef();
   openModal('modal-add-schedule');
+}
+
+function refreshSchedulePastRef() {
+  const studentId = document.getElementById('schedule-student').value;
+  const panel = document.getElementById('schedule-past-ref-panel');
+  const body = document.getElementById('schedule-past-ref-body');
+  if(!studentId) { panel.style.display='none'; return; }
+  const sessions = data.schedules
+    .filter(s=>s.studentId===studentId && (s.recorded || (s.blocks&&s.blocks.length)))
+    .sort((a,b)=>(b.date+'T'+b.time).localeCompare(a.date+'T'+a.time));
+  if(!sessions.length) { panel.style.display='none'; return; }
+  panel.style.display='block';
+  body.classList.remove('open');
+  document.getElementById('schedule-past-ref-arrow').textContent='▾';
+  window._schedulePastSessions = sessions;
+  body.innerHTML = sessions.map((sess, si) => {
+    const blocks = (sess.blocks||[]).filter(b=>b.name||b.type==='notes');
+    const label = sess.recorded ? '✓ 已上課' : '備課';
+    const labelColor = sess.recorded ? 'var(--accent2)' : 'var(--warning)';
+    return `<div class="past-ref-session" style="margin-bottom:6px">
+      <div class="past-ref-session-header" onclick="togglePastSession(this)">
+        <span class="past-ref-session-date">${sess.date} ${sess.time}</span>
+        <span class="past-ref-session-meta">${blocks.length} 個動作</span>
+        <span style="font-size:10px;color:${labelColor};font-weight:600">${label}</span>
+        <div class="past-ref-session-actions">
+          <button class="past-ref-copy-all-btn" onclick="event.stopPropagation();copyPastSessionToSchedule(${si})">複製整堂</button>
+          <span class="past-ref-toggle-arrow-sm">▾</span>
+        </div>
+      </div>
+      <div class="past-ref-blocks">
+        ${blocks.length ? blocks.map((b,bi)=>{
+          const chips=(b.sets||[]).map(s=>{const p=[];if(s.sets)p.push(s.sets+'組');if(s.reps)p.push(s.reps+'次');if(s.weight)p.push(s.weight+'kg');return p.join('·');}).filter(Boolean).join('  ');
+          return `<div class="past-ref-block">
+            <span class="past-ref-block-name">${b.name||'備注'}</span>
+            ${chips?`<span class="past-ref-block-sets">${chips}</span>`:''}
+            <button class="past-ref-copy-btn" onclick="copyScheduleBlockByIndex(${si},${bi})">複製</button>
+          </div>`;
+        }).join('') : '<div class="past-ref-empty">無動作資料</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSchedulePastRef() {
+  const body = document.getElementById('schedule-past-ref-body');
+  const arrow = document.getElementById('schedule-past-ref-arrow');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.textContent = isOpen ? '▾' : '▴';
+}
+
+function copyPastSessionToSchedule(si) {
+  const sess = window._schedulePastSessions?.[si]; if(!sess) return;
+  const blocks = (sess.blocks||[]).filter(b=>b.name||b.type==='notes');
+  if(!blocks.length) return;
+  clearBuilder('schedule-builder');
+  blocks.forEach(b=>addBuilderBlock('schedule-builder', JSON.parse(JSON.stringify(b))));
+  showCopyToast(`已複製整堂課（${blocks.length} 個動作）`);
+}
+
+function copyScheduleBlockByIndex(si, bi) {
+  const sess = window._schedulePastSessions?.[si]; if(!sess) return;
+  const blocks = (sess.blocks||[]).filter(b=>b.name||b.type==='notes');
+  const block = blocks[bi]; if(!block) return;
+  addBuilderBlock('schedule-builder', JSON.parse(JSON.stringify(block)));
+  showCopyToast('已複製：' + (block.name||'備注'));
 }
 
 function addSchedule() {
@@ -1318,7 +1477,7 @@ function addSchedule() {
   const date=document.getElementById('schedule-date').value;
   const time=document.getElementById('schedule-time').value;
   const blocks=getBuilderBlocks('schedule-builder');
-  if(!studentId||!date) return alert('請填寫學生和日期');
+  if(!studentId||!date) { showCopyToast('⚠️ 請填寫學生和日期'); return; }
   const repeatTimes = parseInt(document.getElementById('schedule-repeat').value)||0;
   const weeks = 1 + repeatTimes;
   function addWeeks(dateStr, w) {
@@ -1336,38 +1495,116 @@ function addSchedule() {
 // ── Lesson Record ──
 let currentLessonId=null;
 
-function getPreviousLesson(studentId, beforeDate, beforeTime) {
-  const beforeKey = beforeDate + 'T' + beforeTime;
-  return data.schedules.filter(s=>s.studentId===studentId&&s.recorded&&(s.date+'T'+s.time)<beforeKey)
-    .sort((a,b)=>(b.date+'T'+b.time).localeCompare(a.date+'T'+a.time))[0] || null;
-}
-
 function openLessonModal(slot) {
-  const student=data.students.find(s=>s.id===slot.studentId);
-  currentLessonId=slot.id;
-  document.getElementById('lesson-record-title').textContent=`${student?.name} — ${slot.date} ${slot.time}`;
-  const prev = getPreviousLesson(slot.studentId, slot.date, slot.time);
-  const lastPanel = document.getElementById('last-lesson-panel');
-  if(prev) {
-    lastPanel.style.display='block';
-    document.getElementById('last-lesson-label').textContent=`上次記錄 ${prev.date} ${prev.time}`;
-    document.getElementById('last-lesson-body').innerHTML =
-      renderBlocksDisplay(prev.blocks) +
-      (prev.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:6px;font-style:italic">${prev.notes}</div>` : '');
-  } else { lastPanel.style.display='none'; }
+  const student = data.students.find(s=>s.id===slot.studentId);
+  currentLessonId = slot.id;
+  document.getElementById('lesson-record-title').textContent = `${student?.name} — ${slot.date} ${slot.time}`;
+
+  // 參考過往訓練（包含最近一次，取代舊的「上次記錄」）
+  const pastRef  = document.getElementById('past-ref-panel');
+  const pastBody = document.getElementById('past-ref-body');
+  const beforeKey = slot.date + 'T' + slot.time;
+  const pastSessions = data.schedules
+    .filter(s => s.studentId===slot.studentId && s.recorded && (s.date+'T'+s.time) < beforeKey)
+    .sort((a,b) => (b.date+'T'+b.time).localeCompare(a.date+'T'+a.time));
+
+  if(pastSessions.length) {
+    pastRef.style.display = 'block';
+    window._pastRefSessions = pastSessions;
+    document.getElementById('past-ref-count').textContent = `${pastSessions.length} 堂`;
+    document.getElementById('past-ref-arrow').textContent = '▾';
+    pastBody.classList.remove('open');
+
+    pastBody.innerHTML = pastSessions.map((sess, si) => {
+      const actionBlocks = (sess.blocks||[]).filter(b => b.type!=='notes' && b.name);
+      const isFirst = si === 0;
+
+      const blocksHtml = actionBlocks.length
+        ? actionBlocks.map((b, bi) => {
+            const chips = (b.sets||[]).map(s => {
+              const p = [];
+              if(s.sets)   p.push(s.sets+'組');
+              if(s.reps)   p.push(s.reps+'次');
+              if(s.weight) p.push(s.weight+'kg');
+              return p.join('·');
+            }).filter(Boolean).join('  ');
+            return `<div class="past-ref-block">
+              <span class="past-ref-block-name">${b.name}</span>
+              ${chips ? `<span class="past-ref-block-sets">${chips}</span>` : ''}
+              <button class="past-ref-copy-btn" onclick="copyBlockByIndex(${si},${bi})">複製</button>
+            </div>`;
+          }).join('')
+        : `<div class="past-ref-empty">無訓練動作</div>`;
+
+      const noteHtml = sess.notes
+        ? `<div class="past-ref-session-note">📝 ${sess.notes}</div>` : '';
+
+      return `<div class="past-ref-session">
+        <div class="past-ref-session-header" onclick="togglePastSession(this)">
+          <span class="past-ref-session-date">${sess.date} ${sess.time}</span>
+          <span class="past-ref-session-meta">${actionBlocks.length} 個動作</span>
+          <div class="past-ref-session-actions">
+            <button class="past-ref-copy-all-btn" onclick="event.stopPropagation();copySessionByIndex(${si})">複製整堂</button>
+            <span class="past-ref-toggle-arrow-sm">${isFirst?'▴':'▾'}</span>
+          </div>
+        </div>
+        <div class="past-ref-blocks${isFirst?' open':''}">
+          ${blocksHtml}${noteHtml}
+        </div>
+      </div>`;
+    }).join('');
+
+    // 第一筆預設展開面板
+    pastBody.classList.add('open');
+    document.getElementById('past-ref-arrow').textContent = '▴';
+  } else {
+    pastRef.style.display = 'none';
+  }
+
   clearBuilder('lesson-builder');
   const firstCatId = getCategories()[0]?.id || 'notes';
-  const blocks=slot.blocks?.length?slot.blocks:[{type:firstCatId,name:'',sets:[{sets:'',reps:'',weight:''}],exerciseNote:''}];
-  blocks.forEach(b=>addBuilderBlock('lesson-builder',b));
-  document.getElementById('lesson-notes').value=slot.notes||'';
+  const blocks = slot.blocks?.length ? slot.blocks : [{type:firstCatId,name:'',sets:[{sets:'',reps:'',weight:''}],exerciseNote:''}];
+  blocks.forEach(b => addBuilderBlock('lesson-builder', b));
+  document.getElementById('lesson-notes').value = slot.notes || '';
   openModal('modal-lesson-record');
+}
+
+function togglePastRef() {
+  const body  = document.getElementById('past-ref-body');
+  const arrow = document.getElementById('past-ref-arrow');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.textContent = isOpen ? '▾' : '▴';
+}
+
+function togglePastSession(headerEl) {
+  const blocksEl = headerEl.nextElementSibling;
+  const arrowEl  = headerEl.querySelector('.past-ref-toggle-arrow-sm');
+  const isOpen   = blocksEl.classList.contains('open');
+  blocksEl.classList.toggle('open', !isOpen);
+  if(arrowEl) arrowEl.textContent = isOpen ? '▾' : '▴';
+}
+
+function copyBlockByIndex(sessionIdx, blockIdx) {
+  const sess = window._pastRefSessions?.[sessionIdx]; if(!sess) return;
+  const blocks = (sess.blocks||[]).filter(b=>b.type!=='notes' && b.name);
+  const block = blocks[blockIdx]; if(!block) return;
+  addBuilderBlock('lesson-builder', JSON.parse(JSON.stringify(block)));
+  showCopyToast('已複製：' + block.name);
+}
+
+function copySessionByIndex(sessionIdx) {
+  const sess = window._pastRefSessions?.[sessionIdx]; if(!sess) return;
+  const blocks = (sess.blocks||[]).filter(b=>b.name || b.type==='notes');
+  if(!blocks.length) return;
+  blocks.forEach(b => addBuilderBlock('lesson-builder', JSON.parse(JSON.stringify(b))));
+  showCopyToast(`已複製整堂課（${blocks.length} 個動作）`);
 }
 
 function cancelLessonRecord() {
   appConfirm('確定取消這堂課的登入？堂數會退回，訓練內容保留。', () => {
     const slot=data.schedules.find(s=>s.id===currentLessonId); if(!slot) return;
     slot.recorded=false;
-    // 保留學生的 QR 簽到記錄，只退回課堂扣除
     if(slot.sessionDeducted) {
       const student=data.students.find(s=>s.id===slot.studentId);
       if(student) { student.remainingSessions++; student.completedSessions=Math.max(0,(student.completedSessions||1)-1); }
@@ -1375,14 +1612,6 @@ function cancelLessonRecord() {
     }
     save(); closeModal('modal-lesson-record'); renderSchedule();
   });
-}
-
-function toggleLastLesson() {
-  const body = document.getElementById('last-lesson-body');
-  const arrow = document.getElementById('last-lesson-arrow');
-  const isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 function saveLessonRecord() {
@@ -1445,7 +1674,7 @@ function addStudent() {
   const date=document.getElementById('new-student-date').value||fmtDate(new Date());
   const notes=document.getElementById('new-student-notes').value.trim();
   const threshold=parseInt(document.getElementById('new-student-threshold').value)||3;
-  if(!name||!sessions) return alert('請填寫姓名和堂數');
+  if(!name||!sessions) { showCopyToast('⚠️ 請填寫姓名和堂數'); return; }
   data.students.push({id:genId(),name,remainingSessions:sessions,completedSessions:0,notes,threshold,payments:[{id:genId(),sessions,amount,date}]});
   save(); closeModal('modal-add-student');
   ['new-student-name','new-student-sessions','new-student-amount','new-student-notes','new-student-threshold'].forEach(id=>document.getElementById(id).value='');
@@ -1460,6 +1689,33 @@ function openStudentDetail(id) {
   const totalPaid=s.payments.reduce((sum,p)=>sum+(p.amount||0),0);
   const totalBought=s.payments.reduce((sum,p)=>sum+p.sessions,0);
   const avg=totalBought?Math.round(totalPaid/totalBought):0;
+  const measures=(s.measurements||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+
+  // 最新一筆測量
+  const latestM = measures[0];
+  const latestMStr = latestM ? `體重 ${latestM.weight||'—'} kg${latestM.bodyFat?` · 體脂 ${latestM.bodyFat}%`:''}` : '';
+
+  // 測量表格
+  const measureTableRows = measures.map((m, i) => {
+    const prev = measures[i+1];
+    function delta(cur, prv, unit='') {
+      if(!cur||!prv) return '';
+      const d = (parseFloat(cur)-parseFloat(prv)).toFixed(1);
+      if(d==0) return '';
+      const cls = parseFloat(d)>0 ? 'up' : 'down';
+      return `<span class="measure-delta ${cls}">${parseFloat(d)>0?'▲':'▼'}${Math.abs(d)}${unit}</span>`;
+    }
+    return `<tr>
+      <td>${m.date}</td>
+      <td>${m.weight?`<span class="measure-val">${m.weight}</span>${delta(m.weight,prev?.weight,'')}`:'—'}</td>
+      <td>${m.bodyFat?`<span class="measure-val">${m.bodyFat}</span>${delta(m.bodyFat,prev?.bodyFat,'')}`:'—'}</td>
+      <td>${m.muscle?`<span class="measure-val">${m.muscle}</span>${delta(m.muscle,prev?.muscle,'')}`:'—'}</td>
+      <td>${m.waist?`<span class="measure-val">${m.waist}</span>`:'—'}</td>
+      <td class="measure-note-cell" title="${m.note||''}">${m.note||''}</td>
+      <td><button class="measure-del-btn" onclick="deleteMeasurement('${id}','${m.id}')">×</button></td>
+    </tr>`;
+  }).join('');
+
   document.getElementById('detail-content').innerHTML=`
     <div class="detail-stats">
       <div class="stat-box"><div class="stat-value">${s.remainingSessions}</div><div class="stat-label">剩餘堂數</div></div>
@@ -1470,6 +1726,7 @@ function openStudentDetail(id) {
     <div class="btn-group" style="margin-bottom:16px">
       <button class="btn btn-primary btn-sm" onclick="openAddPaymentModal('${id}')">＋ 續費</button>
       <button class="btn btn-secondary btn-sm" onclick="openAddScheduleForStudent('${id}')">＋ 排課</button>
+      <button class="btn btn-secondary btn-sm" onclick="openMeasurementModal('${id}')">📏 記錄測量</button>
       <button class="btn btn-danger btn-sm" onclick="deleteStudent('${id}')">刪除學生</button>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 12px;background:var(--surface2);border-radius:8px">
@@ -1479,6 +1736,21 @@ function openStudentDetail(id) {
         onchange="updateThreshold('${id}',this.value)">
       <span style="font-size:12px;color:var(--text3)">堂</span>
     </div>
+    <hr class="divider">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:var(--text2)">📏 身體測量（${measures.length} 筆）</div>
+      <button class="btn btn-secondary btn-sm" onclick="openMeasurementModal('${id}')">＋ 新增</button>
+    </div>
+    ${latestM ? `<div style="font-size:12px;color:var(--text2);margin-bottom:8px;padding:8px 12px;background:rgba(45,74,62,0.05);border-radius:7px">最新：${latestMStr}　<span style="color:var(--text3)">${latestM.date}</span></div>` : ''}
+    ${measures.length ? `
+    <div style="overflow-x:auto;margin-bottom:4px">
+      <table class="measure-table">
+        <thead><tr>
+          <th>日期</th><th>體重 kg</th><th>體脂 %</th><th>骨骼肌 kg</th><th>腰圍 cm</th><th>備注</th><th></th>
+        </tr></thead>
+        <tbody>${measureTableRows}</tbody>
+      </table>
+    </div>` : '<div style="color:var(--text3);font-size:13px;padding:6px 0 12px">尚無測量記錄</div>'}
     <hr class="divider">
     <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">上課記錄（${lessons.length} 堂）</div>
     ${!lessons.length?'<div style="color:var(--text3);font-size:13px;padding:8px 0">尚無上課記錄</div>':`<div class="lesson-list">${lessons.map(l=>`
@@ -1511,6 +1783,41 @@ function updateThreshold(studentId, val) {
   save(); renderStudents();
 }
 
+function openMeasurementModal(studentId) {
+  document.getElementById('measure-student-id').value = studentId;
+  document.getElementById('measure-date').value = fmtDate(new Date());
+  ['measure-weight','measure-bodyfat','measure-waist','measure-hip','measure-muscle','measure-note']
+    .forEach(id=>document.getElementById(id).value='');
+  openModal('modal-add-measurement');
+}
+
+function saveMeasurement() {
+  const studentId = document.getElementById('measure-student-id').value;
+  const s = data.students.find(st=>st.id===studentId); if(!s) return;
+  const date    = document.getElementById('measure-date').value || fmtDate(new Date());
+  const weight  = document.getElementById('measure-weight').value;
+  const bodyFat = document.getElementById('measure-bodyfat').value;
+  const waist   = document.getElementById('measure-waist').value;
+  const hip     = document.getElementById('measure-hip').value;
+  const muscle  = document.getElementById('measure-muscle').value;
+  const note    = document.getElementById('measure-note').value.trim();
+  if(!weight && !bodyFat && !waist) { showCopyToast('⚠️ 請至少填寫一項測量數值'); return; }
+  if(!s.measurements) s.measurements = [];
+  s.measurements.push({id:genId(), date, weight:weight||null, bodyFat:bodyFat||null, waist:waist||null, hip:hip||null, muscle:muscle||null, note});
+  save();
+  closeModal('modal-add-measurement');
+  openStudentDetail(studentId);
+}
+
+function deleteMeasurement(studentId, measureId) {
+  const s = data.students.find(st=>st.id===studentId); if(!s) return;
+  appConfirm('確定刪除此筆測量記錄？', () => {
+    s.measurements = (s.measurements||[]).filter(m=>m.id!==measureId);
+    save();
+    openStudentDetail(studentId);
+  });
+}
+
 // ── Expenses ──
 const EXPENSE_CAT_LABELS = {venue:'場地租金', transport:'交通', other:'其他'};
 
@@ -1526,7 +1833,7 @@ function addExpense() {
   const amount = parseInt(document.getElementById('expense-amount').value)||0;
   const date = document.getElementById('expense-date').value||fmtDate(new Date());
   const note = document.getElementById('expense-note').value.trim();
-  if(!amount) return alert('請填寫金額');
+  if(!amount) { showCopyToast('⚠️ 請填寫金額'); return; }
   data.expenses.push({id:genId(), cat, amount, date, note});
   save();
   closeModal('modal-add-expense');
@@ -1559,7 +1866,7 @@ function addPayment() {
   const sessions=parseInt(document.getElementById('payment-sessions').value);
   const amount=parseInt(document.getElementById('payment-amount').value)||0;
   const date=document.getElementById('payment-date').value;
-  if(!sessions) return alert('請填寫堂數');
+  if(!sessions) { showCopyToast('⚠️ 請填寫堂數'); return; }
   const s=data.students.find(st=>st.id===studentId); if(!s) return;
   s.payments.push({id:genId(),sessions,amount,date});
   s.remainingSessions+=sessions;
@@ -1918,7 +2225,7 @@ function drawQRCode(canvasId, text) {
 
 function copyCheckinLink() {
   const link = document.getElementById('qr-link-text').textContent;
-  navigator.clipboard?.writeText(link).then(()=>alert('連結已複製！')).catch(()=>{ prompt('請手動複製此連結：', link); });
+  navigator.clipboard?.writeText(link).then(()=>showCopyToast('連結已複製！')).catch(()=>showCopyToast('請手動複製連結'));
 }
 
 // ── URL Hash Check-in ──
