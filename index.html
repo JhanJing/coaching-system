@@ -861,15 +861,6 @@ window.signInWithGoogle = function() {
 <div class="modal-overlay" id="modal-lesson-record">
   <div class="modal" style="max-width:520px">
     <div class="modal-title"><span id="lesson-record-title">上課記錄</span><button class="modal-close" onclick="closeModal('modal-lesson-record')">×</button></div>
-    <!-- 從過往課表複製面板 -->
-    <div class="past-ref-panel" id="lesson-copy-panel" style="display:none">
-      <button class="past-ref-toggle" onclick="toggleLessonCopyPanel()">
-        <span>📋 從過往課表複製</span>
-        <span id="lesson-copy-count" style="font-size:11px;color:var(--text3);font-weight:400"></span>
-        <span class="past-ref-toggle-arrow" id="lesson-copy-arrow">▾</span>
-      </button>
-      <div class="past-ref-body" id="lesson-copy-body"></div>
-    </div>
     <!-- 參考過往訓練面板 -->
     <div class="past-ref-panel" id="past-ref-panel" style="display:none">
       <button class="past-ref-toggle" onclick="togglePastRef()">
@@ -1699,70 +1690,12 @@ function openLessonModal(slot) {
     pastRef.style.display = 'none';
   }
 
-  // 從過往課表複製面板
-  const copyPanel = document.getElementById('lesson-copy-panel');
-  const copyBody  = document.getElementById('lesson-copy-body');
-  const copySessions = data.schedules
-    .filter(s => s.studentId===slot.studentId && s.id!==slot.id && (s.recorded||(s.blocks&&s.blocks.length)) && (s.date+'T'+s.time)<beforeKey)
-    .sort((a,b)=>(b.date+'T'+b.time).localeCompare(a.date+'T'+a.time));
-  if(copySessions.length) {
-    copyPanel.style.display='block';
-    document.getElementById('lesson-copy-count').textContent=`${copySessions.length} 堂`;
-    document.getElementById('lesson-copy-arrow').textContent='▾';
-    copyBody.classList.remove('open');
-    window._lessonCopySessions = copySessions;
-    copyBody.innerHTML = copySessions.map((sess,si)=>{
-      const actionBlocks=(sess.blocks||[]).filter(b=>b.name||b.type==='notes');
-      const bHtml=actionBlocks.length
-        ? actionBlocks.map((b,bi)=>`<div class="past-ref-block">
-            <span class="past-ref-block-name">${b.name||'備注'}</span>
-            <button class="past-ref-copy-btn" onclick="copyLessonBlockByIndex(${si},${bi})">複製</button>
-          </div>`).join('')
-        : `<div class="past-ref-empty">無訓練內容</div>`;
-      return `<div class="past-ref-session">
-        <div class="past-ref-session-header" onclick="togglePastSession(this)">
-          <span class="past-ref-session-date">${sess.date} ${sess.time}</span>
-          <span class="past-ref-session-meta">${sess.recorded?'已完成':'備課'} · ${actionBlocks.length}項</span>
-          <div class="past-ref-session-actions">
-            <button class="past-ref-copy-all-btn" onclick="event.stopPropagation();copyLessonSessionByIndex(${si})">複製整堂</button>
-            <span class="past-ref-toggle-arrow-sm">${si===0?'▴':'▾'}</span>
-          </div>
-        </div>
-        <div class="past-ref-blocks${si===0?' open':''}">${bHtml}</div>
-      </div>`;
-    }).join('');
-  } else {
-    copyPanel.style.display='none';
-  }
-
   clearBuilder('lesson-builder');
   const firstCatId = getCategories()[0]?.id || 'notes';
   const blocks = slot.blocks?.length ? slot.blocks : [{type:firstCatId,name:'',sets:[{sets:'',reps:'',weight:''}],exerciseNote:''}];
   blocks.forEach(b => addBuilderBlock('lesson-builder', b));
   document.getElementById('lesson-notes').value = slot.notes || '';
   openModal('modal-lesson-record');
-}
-
-function toggleLessonCopyPanel() {
-  const body  = document.getElementById('lesson-copy-body');
-  const arrow = document.getElementById('lesson-copy-arrow');
-  const isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  arrow.textContent = isOpen ? '▾' : '▴';
-}
-function copyLessonBlockByIndex(si, bi) {
-  const sess = window._lessonCopySessions?.[si]; if(!sess) return;
-  const blocks = (sess.blocks||[]).filter(b=>b.name||b.type==='notes');
-  const block = blocks[bi]; if(!block) return;
-  addBuilderBlock('lesson-builder', JSON.parse(JSON.stringify(block)));
-  showCopyToast('已複製：' + (block.name||'備注'));
-}
-function copyLessonSessionByIndex(si) {
-  const sess = window._lessonCopySessions?.[si]; if(!sess) return;
-  const blocks = (sess.blocks||[]).filter(b=>b.name||b.type==='notes');
-  if(!blocks.length) { showCopyToast('此課表無訓練內容'); return; }
-  blocks.forEach(b => addBuilderBlock('lesson-builder', JSON.parse(JSON.stringify(b))));
-  showCopyToast(`已複製整堂課（${blocks.length} 項）`);
 }
 
 function togglePastRef() {
