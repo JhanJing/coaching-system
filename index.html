@@ -861,6 +861,7 @@ window.signInWithGoogle = function() {
 <div class="modal-overlay" id="modal-lesson-record">
   <div class="modal" style="max-width:520px">
     <div class="modal-title"><span id="lesson-record-title">上課記錄</span><button class="modal-close" onclick="closeModal('modal-lesson-record')">×</button></div>
+    <div id="lesson-sessions-info" style="margin:-4px 0 14px;padding:8px 14px;border-radius:8px;font-size:13px;align-items:center;gap:8px"></div>
     <!-- 參考過往訓練面板 -->
     <div class="past-ref-panel" id="past-ref-panel" style="display:none">
       <button class="past-ref-toggle" onclick="togglePastRef()">
@@ -1628,6 +1629,27 @@ function openLessonModal(slot) {
   const student = data.students.find(s=>s.id===slot.studentId);
   currentLessonId = slot.id;
   document.getElementById('lesson-record-title').textContent = `${student?.name} — ${slot.date} ${slot.time}`;
+
+  // 剩餘堂數提示
+  const infoEl = document.getElementById('lesson-sessions-info');
+  if(student && typeof student.remainingSessions === 'number') {
+    const rem = student.remainingSessions;
+    // 扣除本堂後的預覽（若尚未扣過）
+    const afterThis = slot.sessionDeducted ? rem : rem - 1;
+    const isDanger = rem === 0;
+    const isWarn   = rem > 0 && rem <= (student.threshold || 3);
+    const bg    = isDanger ? '#fef2f2' : isWarn ? '#fffbeb' : '#f0fdf4';
+    const color = isDanger ? '#b91c1c'  : isWarn ? '#92400e' : '#166534';
+    const border= isDanger ? '#fca5a5'  : isWarn ? '#fcd34d' : '#86efac';
+    const icon  = isDanger ? '⚠️' : isWarn ? '🔔' : '✅';
+    const afterStr = slot.sessionDeducted
+      ? `（已扣課，剩 <b>${rem}</b> 堂）`
+      : (rem > 0 ? `，完課後剩 <b>${afterThis}</b> 堂` : '');
+    infoEl.style.cssText = `margin:-4px 0 14px;padding:8px 14px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;background:${bg};border:1px solid ${border};color:${color}`;
+    infoEl.innerHTML = `<span>${icon}</span><span>目前剩餘 <b>${rem}</b> 堂${afterStr}</span>`;
+  } else {
+    infoEl.style.display = 'none';
+  }
 
   // 參考過往訓練（包含最近一次，取代舊的「上次記錄」）
   const pastRef  = document.getElementById('past-ref-panel');
