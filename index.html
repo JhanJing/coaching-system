@@ -550,19 +550,60 @@
 </style>
 </head>
 <body>
-<!-- 最優先：確保 loading 畫面一定會結束（Firebase 崩潰也不怕） -->
+<!-- 最優先 script：不依賴 Firebase，確保頁面一定能顯示 -->
 <script>
+// 1. Loading 安全防護（Firebase 崩潰也能顯示登入畫面）
 window._authSafetyTimer = setTimeout(function() {
   var l = document.getElementById('app-loading');
   var s = document.getElementById('login-screen');
   if(l) l.style.display = 'none';
   if(s) s.style.display = 'flex';
 }, 8000);
+
+// 2. 全局錯誤捕捉
+window.onerror = function(msg, src, line, col, err) {
+  var errEl = document.getElementById('login-error');
+  if(errEl) {
+    errEl.textContent = '系統錯誤（' + line + '行）：' + msg;
+    errEl.style.display = 'block';
+  }
+};
+
+// 3. signInWithGoogle 定義在 Firebase 載入前，確保按鈕永遠可用
+window.signInWithGoogle = function() {
+  var errEl = document.getElementById('login-error');
+  var btn   = document.querySelector('.google-btn');
+  if(btn) btn.textContent = '連接中...';
+  errEl.style.display = 'none';
+
+  if(typeof firebase === 'undefined') {
+    errEl.textContent = '❌ Firebase SDK 未載入。請重新整理（Cmd+Shift+R）或檢查網路連線。';
+    errEl.style.display = 'block';
+    if(btn) btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> 使用 Google 帳號登入';
+    return;
+  }
+  if(typeof window._firebaseAuth === 'undefined') {
+    errEl.textContent = '❌ Firebase Auth 初始化失敗，請重新整理。';
+    errEl.style.display = 'block';
+    return;
+  }
+  try {
+    var provider = new firebase.auth.GoogleAuthProvider();
+    window._firebaseAuth.signInWithRedirect(provider).catch(function(err) {
+      errEl.textContent = '❌ 登入失敗：' + (err.code || '') + ' ' + (err.message || '');
+      errEl.style.display = 'block';
+      if(btn) btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> 使用 Google 帳號登入';
+    });
+  } catch(err) {
+    errEl.textContent = '❌ 錯誤：' + err.message;
+    errEl.style.display = 'block';
+  }
+};
 </script>
-<!-- Firebase SDK (compat) -->
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<!-- Firebase SDK v8（穩定版，compat API 與 v10 相同） -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <!-- 載入中 -->
 <div class="app-loading" id="app-loading">
   <div class="spinner"></div>
@@ -900,6 +941,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+window._firebaseAuth = auth; // 供 signInWithGoogle（早期 script）使用
 
 // ── Data ──
 let data = {students:[], schedules:[], expenses:[]};
@@ -935,17 +977,7 @@ async function loadUserData() {
 }
 
 // ── Google 登入 / 登出 ──
-function signInWithGoogle() {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  // GitHub Pages 使用 redirect 登入（popup 在第三方網域常被封鎖）
-  auth.signInWithRedirect(provider).catch(err => {
-    const el = document.getElementById('login-error');
-    if(el) {
-      el.textContent = '登入失敗：' + (err.message || err.code);
-      el.style.display = 'block';
-    }
-  });
-}
+// signInWithGoogle 已定義於頁面頂部的早期 script，此處不重複定義
 
 function signOutUser() {
   appConfirm('確定要登出嗎？', () => auth.signOut());
