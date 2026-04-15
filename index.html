@@ -1610,7 +1610,6 @@ function openLessonModal(slot) {
   // 從過往課表複製面板
   const copyPanel = document.getElementById('lesson-copy-panel');
   const copyBody  = document.getElementById('lesson-copy-body');
-  const beforeKey = slot.date + 'T' + slot.time;
   const copySessions = data.schedules
     .filter(s => s.studentId===slot.studentId && s.id!==slot.id && (s.recorded||(s.blocks&&s.blocks.length)) && (s.date+'T'+s.time)<beforeKey)
     .sort((a,b)=>(b.date+'T'+b.time).localeCompare(a.date+'T'+a.time));
