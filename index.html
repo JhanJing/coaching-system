@@ -571,12 +571,8 @@ window.onerror = function(msg, src, line, col, err) {
   }
 };
 
-// 3. 偵錯輸出工具（顯示在登入錯誤區）
-window._authLog = function(msg) {
-  console.log('[Auth]', msg);
-  var el = document.getElementById('login-debug');
-  if(el) { el.textContent += '\n' + msg; el.style.display = 'block'; }
-};
+// 3. 偵錯輸出工具（僅 console）
+window._authLog = function(msg) { console.log('[Auth]', msg); };
 
 // 4. redirect 結果等待旗標 — 由主 script 設定
 window._redirectPending = false;
@@ -657,8 +653,7 @@ window.signInWithGoogle = function() {
       使用 Google 帳號登入
     </button>
     <div id="login-error" style="display:none;margin-top:14px;padding:10px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:12px;color:#b91c1c;line-height:1.6;text-align:left"></div>
-    <pre id="login-debug" style="display:none;margin-top:10px;padding:8px 12px;background:#f0f4ff;border:1px solid #c0cdf8;border-radius:8px;font-size:11px;color:#2a4099;white-space:pre-wrap;text-align:left;max-height:120px;overflow-y:auto"></pre>
-    <div class="login-note">登入後資料安全儲存於 Firebase<br>每個帳號擁有獨立的學生與課程資料</div>
+<div class="login-note">登入後資料安全儲存於 Firebase<br>每個帳號擁有獨立的學生與課程資料</div>
   </div>
 </div>
 
