@@ -550,6 +550,15 @@
 </style>
 </head>
 <body>
+<!-- 最優先：確保 loading 畫面一定會結束（Firebase 崩潰也不怕） -->
+<script>
+window._authSafetyTimer = setTimeout(function() {
+  var l = document.getElementById('app-loading');
+  var s = document.getElementById('login-screen');
+  if(l) l.style.display = 'none';
+  if(s) s.style.display = 'flex';
+}, 8000);
+</script>
 <!-- Firebase SDK (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
@@ -946,30 +955,9 @@ function signOutUser() {
   appConfirm('確定要登出嗎？', () => auth.signOut());
 }
 
-// 處理 redirect 登入回傳
-auth.getRedirectResult().catch(err => {
-  if(err && err.code) {
-    const msg = err.code === 'auth/unauthorized-domain'
-      ? '此網域尚未授權，請至 Firebase Console 新增 jhanjing.github.io'
-      : '登入失敗：' + err.message;
-    const el = document.getElementById('login-error');
-    if(el) { el.textContent = msg; el.style.display = 'block'; }
-  }
-});
-
 // ── Auth 狀態監聽 ──
-// 安全防護：若 Firebase 超過 8 秒還未回應，強制顯示登入畫面
-const _authTimeout = setTimeout(() => {
-  const loadingEl = document.getElementById('app-loading');
-  const loginEl   = document.getElementById('login-screen');
-  if(loadingEl && loadingEl.style.display !== 'none') {
-    loadingEl.style.display = 'none';
-    if(loginEl) loginEl.style.display = 'flex';
-  }
-}, 8000);
-
 auth.onAuthStateChanged(user => {
-  clearTimeout(_authTimeout);
+  clearTimeout(window._authSafetyTimer);
   const loadingEl  = document.getElementById('app-loading');
   const loginEl    = document.getElementById('login-screen');
   const appEl      = document.querySelector('.app');
