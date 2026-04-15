@@ -937,16 +937,12 @@ async function loadUserData() {
 // ── Google 登入 / 登出 ──
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  // 先試 popup，失敗（如 popup 被封鎖）自動改用 redirect
-  auth.signInWithPopup(provider).catch(err => {
-    if(err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
-      auth.signInWithRedirect(provider);
-    } else {
-      const msg = err.code === 'auth/unauthorized-domain'
-        ? '此網域尚未授權，請至 Firebase Console → Authentication → Settings → 授權網域，新增 jhanjing.github.io'
-        : '登入失敗：' + err.message;
-      document.getElementById('login-error').textContent = msg;
-      document.getElementById('login-error').style.display = 'block';
+  // GitHub Pages 使用 redirect 登入（popup 在第三方網域常被封鎖）
+  auth.signInWithRedirect(provider).catch(err => {
+    const el = document.getElementById('login-error');
+    if(el) {
+      el.textContent = '登入失敗：' + (err.message || err.code);
+      el.style.display = 'block';
     }
   });
 }
@@ -972,7 +968,7 @@ auth.onAuthStateChanged(user => {
     document.getElementById('user-dname').textContent = user.displayName || user.email;
     userChip.classList.add('visible');
     document.getElementById('view-schedule').classList.add('active');
-    renderSchedule();
+    try { renderSchedule(); } catch(e) { console.warn('renderSchedule init:', e); }
     loadUserData();
   } else {
     currentUser = null;
