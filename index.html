@@ -558,7 +558,9 @@ window._authSafetyTimer = setTimeout(function() {
   var s = document.getElementById('login-screen');
   if(l) l.style.display = 'none';
   if(s) s.style.display = 'flex';
-}, 8000);
+  var errEl = document.getElementById('login-error');
+  if(errEl) { errEl.textContent = '⚠️ 載入逾時，請確認網路後重新整理'; errEl.style.display = 'block'; }
+}, 10000);
 
 // 2. 全局錯誤捕捉
 window.onerror = function(msg, src, line, col, err) {
@@ -569,40 +571,65 @@ window.onerror = function(msg, src, line, col, err) {
   }
 };
 
-// 3. signInWithGoogle — popup 優先（Google Cloud Console 已授權），被擋才用 redirect
+// 3. 偵錯輸出工具（顯示在登入錯誤區）
+window._authLog = function(msg) {
+  console.log('[Auth]', msg);
+  var el = document.getElementById('login-debug');
+  if(el) { el.textContent += '\n' + msg; el.style.display = 'block'; }
+};
+
+// 4. redirect 結果等待旗標 — 由主 script 設定
+window._redirectPending = false;
+
+// 5. signInWithGoogle — 優先嘗試 popup，若被擋則改 redirect
 var _googleBtnHTML = '<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> 使用 Google 帳號登入';
 
 window.signInWithGoogle = function() {
   var errEl = document.getElementById('login-error');
   var btn   = document.querySelector('.google-btn');
-  errEl.style.display = 'none';
+  if(errEl) errEl.style.display = 'none';
 
   if(typeof firebase === 'undefined' || typeof window._firebaseAuth === 'undefined') {
-    errEl.textContent = '❌ Firebase 未載入，請重新整理（Cmd+Shift+R）';
-    errEl.style.display = 'block';
+    if(errEl) { errEl.textContent = '❌ Firebase 未載入，請重新整理（Cmd+Shift+R）'; errEl.style.display = 'block'; }
     return;
   }
 
-  if(btn) { btn.textContent = '登入中...'; btn.disabled = true; }
+  if(btn) { btn.textContent = '連線 Google 中...'; btn.disabled = true; }
+  window._authLog('開始登入...');
 
   try {
     var provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
     window._firebaseAuth.signInWithPopup(provider)
-      .then(function() { /* onAuthStateChanged 會處理 */ })
+      .then(function(result) {
+        window._authLog('Popup 登入成功，等待 onAuthStateChanged...');
+        /* onAuthStateChanged 會處理後續 */
+      })
       .catch(function(err) {
-        if(err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+        window._authLog('Popup 錯誤: ' + err.code);
+        if(err.code === 'auth/popup-blocked' ||
+           err.code === 'auth/popup-closed-by-user' ||
+           err.code === 'auth/cancelled-popup-request') {
           // popup 被擋，改用 redirect
+          window._authLog('改用 redirect 登入...');
+          try {
+            sessionStorage.setItem('_pendingAuthRedirect', '1');
+          } catch(e) {}
+          // 顯示 loading 畫面
+          var loadingEl = document.getElementById('app-loading');
+          var loginEl   = document.getElementById('login-screen');
+          if(loadingEl) loadingEl.style.display = 'flex';
+          if(loginEl)   loginEl.style.display   = 'none';
           window._firebaseAuth.signInWithRedirect(provider);
           return;
         }
         if(btn) { btn.innerHTML = _googleBtnHTML; btn.disabled = false; }
-        errEl.textContent = '❌ ' + (err.message || err.code);
-        errEl.style.display = 'block';
+        if(errEl) { errEl.textContent = '❌ [' + err.code + '] ' + (err.message || ''); errEl.style.display = 'block'; }
       });
   } catch(err) {
     if(btn) { btn.innerHTML = _googleBtnHTML; btn.disabled = false; }
-    errEl.textContent = '❌ ' + err.message;
-    errEl.style.display = 'block';
+    if(errEl) { errEl.textContent = '❌ ' + err.message; errEl.style.display = 'block'; }
   }
 };
 </script>
@@ -630,6 +657,7 @@ window.signInWithGoogle = function() {
       使用 Google 帳號登入
     </button>
     <div id="login-error" style="display:none;margin-top:14px;padding:10px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:12px;color:#b91c1c;line-height:1.6;text-align:left"></div>
+    <pre id="login-debug" style="display:none;margin-top:10px;padding:8px 12px;background:#f0f4ff;border:1px solid #c0cdf8;border-radius:8px;font-size:11px;color:#2a4099;white-space:pre-wrap;text-align:left;max-height:120px;overflow-y:auto"></pre>
     <div class="login-note">登入後資料安全儲存於 Firebase<br>每個帳號擁有獨立的學生與課程資料</div>
   </div>
 </div>
@@ -990,34 +1018,94 @@ function signOutUser() {
 }
 
 // ── Auth 狀態監聽 ──
-auth.onAuthStateChanged(user => {
+// 先處理 redirect 回傳結果，避免 onAuthStateChanged(null) 誤顯示登入畫面
+function _showLogin(errMsg) {
   clearTimeout(window._authSafetyTimer);
-  const loadingEl  = document.getElementById('app-loading');
-  const loginEl    = document.getElementById('login-screen');
-  const appEl      = document.querySelector('.app');
-  const userChip   = document.getElementById('user-chip');
+  const loadingEl = document.getElementById('app-loading');
+  const loginEl   = document.getElementById('login-screen');
+  const appEl     = document.querySelector('.app');
+  if(loadingEl) loadingEl.style.display = 'none';
+  if(loginEl)   loginEl.style.display   = 'flex';
+  if(appEl)     appEl.style.display     = 'none';
+  const btn = document.querySelector('.google-btn');
+  if(btn && btn.disabled) { btn.innerHTML = window._googleBtnHTML||'使用 Google 帳號登入'; btn.disabled = false; }
+  if(errMsg) {
+    const errEl = document.getElementById('login-error');
+    if(errEl) { errEl.textContent = errMsg; errEl.style.display = 'block'; }
+  }
+}
+
+function _showApp(user) {
+  clearTimeout(window._authSafetyTimer);
+  currentUser = user;
+  const loadingEl = document.getElementById('app-loading');
+  const loginEl   = document.getElementById('login-screen');
+  const appEl     = document.querySelector('.app');
+  const userChip  = document.getElementById('user-chip');
+  if(loadingEl) loadingEl.style.display = 'none';
+  if(loginEl)   loginEl.style.display   = 'none';
+  if(appEl)     appEl.style.display     = 'flex';
+  document.getElementById('user-avatar').src = user.photoURL || '';
+  document.getElementById('user-dname').textContent = user.displayName || user.email;
+  if(userChip) userChip.classList.add('visible');
+  document.getElementById('view-schedule').classList.add('active');
+  try { renderSchedule(); } catch(e) {}
+  loadUserData();
+}
+
+// 檢查是否從 Google redirect 回來
+let _redirectChecked = false;
+const _wasPendingRedirect = (function() {
+  try { return sessionStorage.getItem('_pendingAuthRedirect') === '1'; } catch(e) { return false; }
+})();
+
+if(_wasPendingRedirect) {
+  try { sessionStorage.removeItem('_pendingAuthRedirect'); } catch(e) {}
+  window._authLog('偵測到 redirect 回傳，等待 getRedirectResult...');
+  window._redirectPending = true;
+  // 保持 loading 畫面，等待 getRedirectResult 完成
+  auth.getRedirectResult().then(function(result) {
+    _redirectChecked = true;
+    window._redirectPending = false;
+    if(result && result.user) {
+      window._authLog('getRedirectResult 成功: ' + result.user.email);
+      // onAuthStateChanged 應該也會 / 已經 fire，但這裡直接處理以確保
+      _showApp(result.user);
+    } else {
+      window._authLog('getRedirectResult 無使用者，顯示登入');
+      // 看 onAuthStateChanged 是否已有 user
+      const currentAuthUser = auth.currentUser;
+      if(currentAuthUser) {
+        _showApp(currentAuthUser);
+      } else {
+        _showLogin(null);
+      }
+    }
+  }).catch(function(err) {
+    _redirectChecked = true;
+    window._redirectPending = false;
+    window._authLog('getRedirectResult 錯誤: ' + err.code);
+    _showLogin('❌ 登入失敗 [' + err.code + ']：' + (err.message || ''));
+  });
+} else {
+  _redirectChecked = true;
+}
+
+auth.onAuthStateChanged(user => {
+  window._authLog('onAuthStateChanged: ' + (user ? user.email : 'null') + ' | redirectPending=' + window._redirectPending);
+  // 若 redirect 結果尚未確認，先忽略此次 null 通知
+  if(window._redirectPending) return;
+
+  clearTimeout(window._authSafetyTimer);
+  const userChip = document.getElementById('user-chip');
 
   if(user) {
-    currentUser = user;
-    loadingEl.style.display  = 'none';
-    loginEl.style.display    = 'none';
-    appEl.style.display      = 'flex';
-    document.getElementById('user-avatar').src = user.photoURL || '';
-    document.getElementById('user-dname').textContent = user.displayName || user.email;
-    userChip.classList.add('visible');
-    document.getElementById('view-schedule').classList.add('active');
-    try { renderSchedule(); } catch(e) {}
-    loadUserData();
+    _showApp(user);
   } else {
     currentUser = null;
     data = {students:[], schedules:[], expenses:[]};
-    loadingEl.style.display  = 'none';
-    loginEl.style.display    = 'flex';
-    appEl.style.display      = 'none';
-    userChip.classList.remove('visible');
-    // 還原登入按鈕
-    var btn = document.querySelector('.google-btn');
-    if(btn && btn.disabled) { btn.innerHTML = window._googleBtnHTML||'使用 Google 帳號登入'; btn.disabled = false; }
+    if(userChip) userChip.classList.remove('visible');
+    _showLogin(null);
   }
 });
 
