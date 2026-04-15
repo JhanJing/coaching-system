@@ -172,6 +172,9 @@
   }
   .modal-overlay.open .modal { transform:translateY(0); opacity:1; }
   .modal-title { font-size:14px; font-weight:600; letter-spacing:-0.01em; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; }
+  .name-edit-input { background:none; border:none; border-bottom:1.5px solid transparent; font-size:14px; font-weight:600; font-family:inherit; color:var(--text); outline:none; min-width:80px; max-width:200px; padding:2px 0; transition:border-color 0.15s; }
+  .name-edit-input:hover { border-bottom-color:var(--border); }
+  .name-edit-input:focus { border-bottom-color:var(--accent2); }
   .modal-close { background:none; border:none; color:var(--text3); cursor:pointer; font-size:20px; line-height:1; width:28px; height:28px; border-radius:50%; background:var(--surface2); display:flex; align-items:center; justify-content:center; }
   .modal-close:hover { color:var(--text); }
 
@@ -749,7 +752,7 @@
 <div class="modal-overlay" id="modal-add-schedule">
   <div class="modal">
     <div class="modal-title">新增課程 <button class="modal-close" onclick="closeModal('modal-add-schedule')">×</button></div>
-    <div class="form-group"><label>學生</label><select id="schedule-student" onchange="refreshSchedulePastRef()"></select></div>
+    <div class="form-group"><label>學生</label><select id="schedule-student"></select></div>
     <div class="form-row">
       <div class="form-group"><label>日期</label><input type="date" id="schedule-date"></div>
       <div class="form-group"><label>時間</label><input type="time" id="schedule-time" value="09:00"></div>
@@ -758,19 +761,6 @@
       <label>每週重複次數 <span id="repeat-preview" style="color:var(--accent2);font-family:'DM Mono',monospace;font-weight:600"></span></label>
       <input type="number" id="schedule-repeat" placeholder="留空 = 只排這一堂" min="1" max="104" inputmode="numeric"
         oninput="document.getElementById('repeat-preview').textContent=this.value?'→ 共'+(parseInt(this.value)+1)+'堂':''">
-    </div>
-    <!-- 從過往課表複製 -->
-    <div class="past-ref-panel" id="schedule-past-ref-panel" style="display:none;margin-bottom:14px">
-      <button class="past-ref-toggle" onclick="toggleSchedulePastRef()">
-        <span>📋 從過往課表複製</span>
-        <span id="schedule-past-ref-arrow">▾</span>
-      </button>
-      <div class="past-ref-body" id="schedule-past-ref-body"></div>
-    </div>
-    <div class="form-group">
-      <label>訓練內容（備課）</label>
-      <div id="schedule-builder"></div>
-      <button class="add-block-btn" onclick="addBuilderBlock('schedule-builder')">＋ 新增訓練項目</button>
     </div>
     <div class="btn-group">
       <button class="btn btn-primary" onclick="addSchedule()">新增課程</button>
@@ -782,7 +772,7 @@
 <!-- Student Detail -->
 <div class="modal-overlay" id="modal-student-detail">
   <div class="modal" style="max-width:560px">
-    <div class="modal-title"><span id="detail-student-name"></span><button class="modal-close" onclick="closeModal('modal-student-detail')">×</button></div>
+    <div class="modal-title"><input id="detail-student-name" class="name-edit-input" placeholder="學生姓名" onblur="updateStudentName(this)"><button class="modal-close" onclick="closeModal('modal-student-detail')">×</button></div>
     <div id="detail-content"></div>
   </div>
 </div>
@@ -791,6 +781,15 @@
 <div class="modal-overlay" id="modal-lesson-record">
   <div class="modal" style="max-width:520px">
     <div class="modal-title"><span id="lesson-record-title">上課記錄</span><button class="modal-close" onclick="closeModal('modal-lesson-record')">×</button></div>
+    <!-- 從過往課表複製面板 -->
+    <div class="past-ref-panel" id="lesson-copy-panel" style="display:none">
+      <button class="past-ref-toggle" onclick="toggleLessonCopyPanel()">
+        <span>📋 從過往課表複製</span>
+        <span id="lesson-copy-count" style="font-size:11px;color:var(--text3);font-weight:400"></span>
+        <span class="past-ref-toggle-arrow" id="lesson-copy-arrow">▾</span>
+      </button>
+      <div class="past-ref-body" id="lesson-copy-body"></div>
+    </div>
     <!-- 參考過往訓練面板 -->
     <div class="past-ref-panel" id="past-ref-panel" style="display:none">
       <button class="past-ref-toggle" onclick="togglePastRef()">
@@ -951,6 +950,9 @@ auth.onAuthStateChanged(user => {
     document.getElementById('user-avatar').src = user.photoURL || '';
     document.getElementById('user-dname').textContent = user.displayName || user.email;
     userChip.classList.add('visible');
+    // 立即顯示行事曆骨架，資料載入後再填充
+    document.getElementById('view-schedule').classList.add('active');
+    renderSchedule();
     loadUserData();
   } else {
     currentUser = null;
@@ -1399,10 +1401,7 @@ function openAddScheduleModal(studentId=null, date=null) {
   document.getElementById('schedule-date').value=date||fmtDate(new Date());
   document.getElementById('schedule-time').value='09:00';
   document.getElementById('schedule-repeat').value='';
-  clearBuilder('schedule-builder');
-  const firstCat = getCategories()[0];
-  addBuilderBlock('schedule-builder',{type:firstCat?.id||'notes',name:'',sets:[{sets:'',reps:'',weight:''}],exerciseNote:''});
-  refreshSchedulePastRef();
+  document.getElementById('repeat-preview').textContent='';
   openModal('modal-add-schedule');
 }
 
@@ -1476,7 +1475,6 @@ function addSchedule() {
   const studentId=document.getElementById('schedule-student').value;
   const date=document.getElementById('schedule-date').value;
   const time=document.getElementById('schedule-time').value;
-  const blocks=getBuilderBlocks('schedule-builder');
   if(!studentId||!date) { showCopyToast('⚠️ 請填寫學生和日期'); return; }
   const repeatTimes = parseInt(document.getElementById('schedule-repeat').value)||0;
   const weeks = 1 + repeatTimes;
@@ -1487,7 +1485,7 @@ function addSchedule() {
     return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
   }
   for(let w=0; w<weeks; w++) {
-    data.schedules.push({id:genId(),studentId,date:w===0?date:addWeeks(date,w),time,blocks:JSON.parse(JSON.stringify(blocks)),recorded:false,notes:''});
+    data.schedules.push({id:genId(),studentId,date:w===0?date:addWeeks(date,w),time,blocks:[],recorded:false,notes:''});
   }
   save(); closeModal('modal-add-schedule'); renderSchedule();
 }
@@ -1561,12 +1559,71 @@ function openLessonModal(slot) {
     pastRef.style.display = 'none';
   }
 
+  // 從過往課表複製面板
+  const copyPanel = document.getElementById('lesson-copy-panel');
+  const copyBody  = document.getElementById('lesson-copy-body');
+  const beforeKey = slot.date + 'T' + slot.time;
+  const copySessions = data.schedules
+    .filter(s => s.studentId===slot.studentId && s.id!==slot.id && (s.recorded||(s.blocks&&s.blocks.length)) && (s.date+'T'+s.time)<beforeKey)
+    .sort((a,b)=>(b.date+'T'+b.time).localeCompare(a.date+'T'+a.time));
+  if(copySessions.length) {
+    copyPanel.style.display='block';
+    document.getElementById('lesson-copy-count').textContent=`${copySessions.length} 堂`;
+    document.getElementById('lesson-copy-arrow').textContent='▾';
+    copyBody.classList.remove('open');
+    window._lessonCopySessions = copySessions;
+    copyBody.innerHTML = copySessions.map((sess,si)=>{
+      const actionBlocks=(sess.blocks||[]).filter(b=>b.name||b.type==='notes');
+      const bHtml=actionBlocks.length
+        ? actionBlocks.map((b,bi)=>`<div class="past-ref-block">
+            <span class="past-ref-block-name">${b.name||'備注'}</span>
+            <button class="past-ref-copy-btn" onclick="copyLessonBlockByIndex(${si},${bi})">複製</button>
+          </div>`).join('')
+        : `<div class="past-ref-empty">無訓練內容</div>`;
+      return `<div class="past-ref-session">
+        <div class="past-ref-session-header" onclick="togglePastSession(this)">
+          <span class="past-ref-session-date">${sess.date} ${sess.time}</span>
+          <span class="past-ref-session-meta">${sess.recorded?'已完成':'備課'} · ${actionBlocks.length}項</span>
+          <div class="past-ref-session-actions">
+            <button class="past-ref-copy-all-btn" onclick="event.stopPropagation();copyLessonSessionByIndex(${si})">複製整堂</button>
+            <span class="past-ref-toggle-arrow-sm">${si===0?'▴':'▾'}</span>
+          </div>
+        </div>
+        <div class="past-ref-blocks${si===0?' open':''}">${bHtml}</div>
+      </div>`;
+    }).join('');
+  } else {
+    copyPanel.style.display='none';
+  }
+
   clearBuilder('lesson-builder');
   const firstCatId = getCategories()[0]?.id || 'notes';
   const blocks = slot.blocks?.length ? slot.blocks : [{type:firstCatId,name:'',sets:[{sets:'',reps:'',weight:''}],exerciseNote:''}];
   blocks.forEach(b => addBuilderBlock('lesson-builder', b));
   document.getElementById('lesson-notes').value = slot.notes || '';
   openModal('modal-lesson-record');
+}
+
+function toggleLessonCopyPanel() {
+  const body  = document.getElementById('lesson-copy-body');
+  const arrow = document.getElementById('lesson-copy-arrow');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  arrow.textContent = isOpen ? '▾' : '▴';
+}
+function copyLessonBlockByIndex(si, bi) {
+  const sess = window._lessonCopySessions?.[si]; if(!sess) return;
+  const blocks = (sess.blocks||[]).filter(b=>b.name||b.type==='notes');
+  const block = blocks[bi]; if(!block) return;
+  addBuilderBlock('lesson-builder', JSON.parse(JSON.stringify(block)));
+  showCopyToast('已複製：' + (block.name||'備注'));
+}
+function copyLessonSessionByIndex(si) {
+  const sess = window._lessonCopySessions?.[si]; if(!sess) return;
+  const blocks = (sess.blocks||[]).filter(b=>b.name||b.type==='notes');
+  if(!blocks.length) { showCopyToast('此課表無訓練內容'); return; }
+  blocks.forEach(b => addBuilderBlock('lesson-builder', JSON.parse(JSON.stringify(b))));
+  showCopyToast(`已複製整堂課（${blocks.length} 項）`);
 }
 
 function togglePastRef() {
@@ -1684,7 +1741,9 @@ function addStudent() {
 
 function openStudentDetail(id) {
   const s=data.students.find(st=>st.id===id); if(!s) return;
-  document.getElementById('detail-student-name').textContent=s.name;
+  const nameEl = document.getElementById('detail-student-name');
+  nameEl.value = s.name;
+  nameEl.dataset.studentId = id;
   const lessons=data.schedules.filter(sl=>sl.studentId===id&&sl.recorded).sort((a,b)=>b.date.localeCompare(a.date));
   const totalPaid=s.payments.reduce((sum,p)=>sum+(p.amount||0),0);
   const totalBought=s.payments.reduce((sum,p)=>sum+p.sessions,0);
@@ -1766,6 +1825,15 @@ function openStudentDetail(id) {
       return `<div class="payment-item"><div><div>${p.sessions} 堂</div><div class="payment-date">${p.date}</div>${ps?`<div class="per-session">$${ps.toLocaleString()}/堂</div>`:''}</div><div class="payment-amount">$${(p.amount||0).toLocaleString()}</div></div>`;
     }).join('')}`;
   openModal('modal-student-detail');
+}
+
+function updateStudentName(el) {
+  const newName = el.value.trim();
+  const s = data.students.find(st=>st.id===el.dataset.studentId);
+  if(!s || !newName) { el.value = s?.name||''; return; }
+  if(newName === s.name) return;
+  s.name = newName;
+  save(); renderStudents();
 }
 
 function deleteStudent(id) {
