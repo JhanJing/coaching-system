@@ -958,7 +958,18 @@ auth.getRedirectResult().catch(err => {
 });
 
 // ── Auth 狀態監聽 ──
+// 安全防護：若 Firebase 超過 8 秒還未回應，強制顯示登入畫面
+const _authTimeout = setTimeout(() => {
+  const loadingEl = document.getElementById('app-loading');
+  const loginEl   = document.getElementById('login-screen');
+  if(loadingEl && loadingEl.style.display !== 'none') {
+    loadingEl.style.display = 'none';
+    if(loginEl) loginEl.style.display = 'flex';
+  }
+}, 8000);
+
 auth.onAuthStateChanged(user => {
+  clearTimeout(_authTimeout);
   const loadingEl  = document.getElementById('app-loading');
   const loginEl    = document.getElementById('login-screen');
   const appEl      = document.querySelector('.app');
@@ -969,11 +980,9 @@ auth.onAuthStateChanged(user => {
     loadingEl.style.display  = 'none';
     loginEl.style.display    = 'none';
     appEl.style.display      = 'flex';
-    // 顯示使用者資訊
     document.getElementById('user-avatar').src = user.photoURL || '';
     document.getElementById('user-dname').textContent = user.displayName || user.email;
     userChip.classList.add('visible');
-    // 立即顯示行事曆骨架，資料載入後再填充
     document.getElementById('view-schedule').classList.add('active');
     renderSchedule();
     loadUserData();
