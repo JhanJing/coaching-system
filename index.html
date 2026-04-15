@@ -984,6 +984,20 @@ function signOutUser() {
 }
 
 // ── Auth 狀態監聽 ──
+// redirect 登入時，onAuthStateChanged 會先以 null 觸發（redirect 尚未處理完）
+// 用 getRedirectResult 確認 redirect 已處理完，才決定是否顯示登入畫面
+window._redirectResolved = false;
+
+auth.getRedirectResult()
+  .then(() => { window._redirectResolved = true; })
+  .catch(err => {
+    window._redirectResolved = true;
+    if(err && err.code && err.code !== 'auth/null-user') {
+      const el = document.getElementById('login-error');
+      if(el) { el.textContent = '登入失敗：' + (err.code||'') + ' ' + (err.message||''); el.style.display='block'; }
+    }
+  });
+
 auth.onAuthStateChanged(user => {
   clearTimeout(window._authSafetyTimer);
   const loadingEl  = document.getElementById('app-loading');
@@ -1003,12 +1017,28 @@ auth.onAuthStateChanged(user => {
     try { renderSchedule(); } catch(e) { console.warn('renderSchedule init:', e); }
     loadUserData();
   } else {
-    currentUser = null;
-    data = {students:[], schedules:[], expenses:[]};
-    loadingEl.style.display  = 'none';
-    loginEl.style.display    = 'flex';
-    appEl.style.display      = 'none';
-    userChip.classList.remove('visible');
+    // 等 getRedirectResult 確認沒有 pending redirect，再顯示登入畫面
+    const showLoginUI = () => {
+      currentUser = null;
+      data = {students:[], schedules:[], expenses:[]};
+      loadingEl.style.display  = 'none';
+      loginEl.style.display    = 'flex';
+      appEl.style.display      = 'none';
+      userChip.classList.remove('visible');
+    };
+    if(window._redirectResolved) {
+      showLoginUI();
+    } else {
+      // 輪詢等待 redirect 處理完（最多 6 秒）
+      let waited = 0;
+      const tid = setInterval(() => {
+        waited += 100;
+        if(window._redirectResolved || waited >= 6000) {
+          clearInterval(tid);
+          if(!auth.currentUser) showLoginUI();
+        }
+      }, 100);
+    }
   }
 });
 
