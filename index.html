@@ -832,7 +832,8 @@ window.signInWithGoogle = function() {
 <div class="modal-overlay" id="modal-add-schedule">
   <div class="modal">
     <div class="modal-title">新增課程 <button class="modal-close" onclick="closeModal('modal-add-schedule')">×</button></div>
-    <div class="form-group"><label>學生</label><select id="schedule-student"></select></div>
+    <div class="form-group"><label>學生</label><select id="schedule-student" onchange="updateScheduleSessionsInfo()"></select></div>
+    <div id="schedule-sessions-info" style="margin:-8px 0 12px;padding:8px 14px;border-radius:8px;font-size:13px;display:none;align-items:center;gap:8px"></div>
     <div class="form-row">
       <div class="form-group"><label>日期</label><input type="date" id="schedule-date"></div>
       <div class="form-group"><label>時間</label><input type="time" id="schedule-time" value="09:00"></div>
@@ -1534,7 +1535,27 @@ function openAddScheduleModal(studentId=null, date=null) {
   document.getElementById('schedule-time').value='09:00';
   document.getElementById('schedule-repeat').value='';
   document.getElementById('repeat-preview').textContent='';
+  updateScheduleSessionsInfo();
   openModal('modal-add-schedule');
+}
+
+function updateScheduleSessionsInfo() {
+  const infoEl = document.getElementById('schedule-sessions-info');
+  const sid = document.getElementById('schedule-student').value;
+  const student = data.students.find(s=>s.id===sid);
+  if(!student || typeof student.remainingSessions !== 'number') { infoEl.style.display='none'; return; }
+  const rem = student.remainingSessions;
+  const isDanger = rem === 0;
+  const isWarn   = rem > 0 && rem <= (student.threshold || 3);
+  const bg    = isDanger ? '#fef2f2' : isWarn ? '#fffbeb' : '#f0fdf4';
+  const color = isDanger ? '#b91c1c' : isWarn ? '#92400e' : '#166534';
+  const border= isDanger ? '#fca5a5' : isWarn ? '#fcd34d' : '#86efac';
+  const icon  = isDanger ? '⚠️' : isWarn ? '🔔' : '✅';
+  const msg   = isDanger ? '目前剩餘 <b>0</b> 堂，請提醒學生續費'
+              : isWarn   ? `目前剩餘 <b>${rem}</b> 堂，即將用完`
+              :             `目前剩餘 <b>${rem}</b> 堂`;
+  infoEl.style.cssText=`margin:-8px 0 12px;padding:8px 14px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;background:${bg};border:1px solid ${border};color:${color}`;
+  infoEl.innerHTML=`<span>${icon}</span><span>${msg}</span>`;
 }
 
 function refreshSchedulePastRef() {
