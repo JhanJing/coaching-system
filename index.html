@@ -2359,9 +2359,23 @@ function handleCheckinBtn(slotId, isCheckedIn) {
 }
 function toggleCheckin(slotId) {
   const slot = data.schedules.find(s=>s.id===slotId); if(!slot) return;
+  const student = data.students.find(s=>s.id===slot.studentId);
   slot.checkedIn = !slot.checkedIn;
-  if(slot.checkedIn) slot.checkinTime = new Date().toISOString();
-  else delete slot.checkinTime;
+  if(slot.checkedIn) {
+    slot.checkinTime = new Date().toISOString();
+    if(student && student.remainingSessions > 0 && !slot.sessionDeducted) {
+      student.remainingSessions--;
+      student.completedSessions = (student.completedSessions||0)+1;
+      slot.sessionDeducted = true;
+    }
+  } else {
+    delete slot.checkinTime;
+    if(student && slot.sessionDeducted) {
+      student.remainingSessions++;
+      student.completedSessions = Math.max(0,(student.completedSessions||1)-1);
+      slot.sessionDeducted = false;
+    }
+  }
   save(); renderSchedule();
 }
 
@@ -2421,7 +2435,14 @@ function handleHashCheckin() {
   const student = data.students.find(s=>s.id===slot.studentId);
   const name = student?.name || '學生';
   if(slot.checkedIn) { showCheckinPage(`${name}，你已經簽到了！\n${slot.date} ${slot.time}`, true); return true; }
-  slot.checkedIn = true; slot.checkinTime = new Date().toISOString(); save();
+  slot.checkedIn = true; slot.checkinTime = new Date().toISOString();
+  const student = data.students.find(s=>s.id===slot.studentId);
+  if(student && student.remainingSessions > 0 && !slot.sessionDeducted) {
+    student.remainingSessions--;
+    student.completedSessions = (student.completedSessions||0)+1;
+    slot.sessionDeducted = true;
+  }
+  save();
   showCheckinPage(`簽到成功！\n${name}\n${slot.date} ${slot.time}`, true);
   return true;
 }
