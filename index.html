@@ -633,6 +633,21 @@ window.signInWithGoogle = function() {
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script>
+// ── Firebase 初始化（提前執行，確保按鈕點擊時已就緒）──
+const firebaseConfig = {
+  apiKey: "AIzaSyDn_uorFzZIRmiLLyEqWskn9N7OPuE0ECw",
+  authDomain: "coaching-system-3779a.firebaseapp.com",
+  projectId: "coaching-system-3779a",
+  storageBucket: "coaching-system-3779a.firebasestorage.app",
+  messagingSenderId: "429132571236",
+  appId: "1:429132571236:web:7a67d906a4be4015b5f571"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+window._firebaseAuth = auth;
+</script>
 <!-- 載入中 -->
 <div class="app-loading" id="app-loading">
   <div class="spinner"></div>
@@ -951,20 +966,6 @@ window.signInWithGoogle = function() {
 </div>
 
 <script>
-// ── Firebase 初始化 ──
-const firebaseConfig = {
-  apiKey: "AIzaSyDn_uorFzZIRmiLLyEqWskn9N7OPuE0ECw",
-  authDomain: "coaching-system-3779a.firebaseapp.com",
-  projectId: "coaching-system-3779a",
-  storageBucket: "coaching-system-3779a.firebasestorage.app",
-  messagingSenderId: "429132571236",
-  appId: "1:429132571236:web:7a67d906a4be4015b5f571"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-window._firebaseAuth = auth; // 供 signInWithGoogle（早期 script）使用
-
 // ── Data ──
 let data = {students:[], schedules:[], expenses:[]};
 let currentUser = null;
